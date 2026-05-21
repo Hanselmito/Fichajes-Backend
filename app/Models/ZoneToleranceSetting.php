@@ -5,22 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
-class Notification extends Model
+class ZoneToleranceSetting extends Model
 {
-    const UPDATED_AT = null;
+    protected $table = 'zone_tolerance_settings';
 
     protected $guarded = [];
 
     protected function casts(): array
     {
         return [
-            'is_read' => 'boolean',
+            'notify_coordinator' => 'boolean',
             'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
 
-    public function user(): BelongsTo
+    public function zone(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Zone::class);
     }
 }
