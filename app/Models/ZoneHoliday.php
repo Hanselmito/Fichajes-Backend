@@ -5,28 +5,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
-class ScheduleException extends Model
+class ZoneHoliday extends Model
 {
     const UPDATED_AT = null;
+
+    protected $table = 'zone_holidays';
 
     protected $guarded = [];
 
     protected function casts(): array
     {
         return [
-            'exception_date' => 'date',
+            'date' => 'date',
+            'recurring' => 'boolean',
             'created_at' => 'datetime',
         ];
     }
 
-    public function assignment(): BelongsTo
+    public function zone(): BelongsTo
     {
-        return $this->belongsTo(ScheduleAssignment::class, 'assignment_id');
-    }
-
-    public function substituteEmployee(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'substitute_employee_id');
+        return $this->belongsTo(Zone::class);
     }
 
     public function creator(): BelongsTo

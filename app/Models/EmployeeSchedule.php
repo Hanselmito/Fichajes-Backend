@@ -5,26 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
 
-class BreakModel extends Model
+class EmployeeSchedule extends Model
 {
-    protected $table = 'breaks';
-
-    const UPDATED_AT = null;
+    protected $table = 'employee_schedules';
 
     protected $guarded = [];
 
     protected function casts(): array
     {
         return [
-            'break_start' => 'datetime',
-            'break_end' => 'datetime',
+            'daily_hours' => 'decimal:2',
+            'is_working_day' => 'boolean',
             'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
-    }
-
-    public function record(): BelongsTo
-    {
-        return $this->belongsTo(Record::class);
     }
 
     public function employee(): BelongsTo
