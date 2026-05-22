@@ -31,6 +31,7 @@ Route::apiResource('users', \App\Http\Controllers\Api\UserController::class);
 Route::apiResource('zones', \App\Http\Controllers\Api\ZoneController::class);
 Route::get('/zones-minimal', $todo('zones-minimal.index'));
 Route::apiResource('clients', \App\Http\Controllers\Api\ClientController::class);
+Route::put('/records/{record}/confirm', [\App\Http\Controllers\Api\RecordController::class, 'confirm']);
 Route::apiResource('records', \App\Http\Controllers\Api\RecordController::class);
 Route::apiResource('incidencias', \App\Http\Controllers\Api\IncidenciaController::class);
 Route::apiResource('vacations', \App\Http\Controllers\Api\VacationController::class);
