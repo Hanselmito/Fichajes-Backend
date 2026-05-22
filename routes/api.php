@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 
 $todo = static fn (string $endpoint) => static function () use ($endpoint) {
@@ -17,9 +18,9 @@ Route::get('/health', static function () {
 });
 
 Route::prefix('auth')->group(function () use ($todo) {
-    Route::post('/login', $todo('auth.login'));
-    Route::post('/logout', $todo('auth.logout'));
-    Route::get('/me', $todo('auth.me'));
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
 });
 
 Route::get('/dashboard', $todo('dashboard.index'));
