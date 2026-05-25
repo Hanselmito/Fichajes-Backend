@@ -8,7 +8,22 @@ use Illuminate\Database\Eloquent\Model;
 
 class Schedule extends Model
 {
+    const UPDATED_AT = null;
+
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $guarded = [];
+
+    protected function casts(): array
+    {
+        return [
+            'week_start' => 'date',
+            'is_template' => 'boolean',
+            'created_at' => 'datetime',
+        ];
+    }
 
     public function zone(): BelongsTo
     {

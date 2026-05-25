@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\LegacyApiAuth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -91,6 +92,7 @@ class UserController extends Controller
         }
 
         $user = User::query()->create([
+            'id' => $this->nextLegacyId('users'),
             'username' => $data['username'],
             'password_hash' => Hash::make($data['password']),
             'name' => $data['name'],
@@ -377,6 +379,11 @@ class UserController extends Controller
         }
 
         return false;
+    }
+
+    private function nextLegacyId(string $table): int
+    {
+        return ((int) DB::table($table)->max('id')) + 1;
     }
 
     private function unauthorized(): JsonResponse

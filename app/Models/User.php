@@ -15,6 +15,10 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $guarded = [];
 
     protected $hidden = [

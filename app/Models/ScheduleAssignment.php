@@ -10,6 +10,10 @@ class ScheduleAssignment extends Model
 {
     const UPDATED_AT = null;
 
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $guarded = [];
 
     protected function casts(): array

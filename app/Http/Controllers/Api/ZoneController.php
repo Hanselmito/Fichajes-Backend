@@ -36,6 +36,29 @@ class ZoneController extends Controller
         ]);
     }
 
+    public function minimal(Request $request): JsonResponse
+    {
+        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+
+        if (! $authUser) {
+            return $this->unauthorized();
+        }
+
+        if (! in_array($authUser->role, ['admin', 'coordinator'], true)) {
+            return $this->forbidden('Sin permisos');
+        }
+
+        $zones = Zone::query()
+            ->select(['id', 'name', 'created_at'])
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'zones' => $zones,
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
