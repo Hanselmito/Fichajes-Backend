@@ -10,6 +10,7 @@ use App\Models\Zone;
 use App\Support\LegacyApiAuth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -138,6 +139,7 @@ class RecordController extends Controller
         }
 
         $record = Record::query()->create([
+            'id' => $this->nextLegacyId('records'),
             'employee_id' => $authUser->id,
             'type' => $data['type'],
             'timestamp' => now(),
@@ -338,6 +340,11 @@ class RecordController extends Controller
             'success' => true,
             'message' => 'Fichaje confirmado',
         ]);
+    }
+
+    private function nextLegacyId(string $table): int
+    {
+        return ((int) DB::table($table)->max('id')) + 1;
     }
 
     private function applyRecordVisibility($query, User $authUser): void

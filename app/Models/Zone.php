@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Zone extends Model
 {
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $guarded = [];
 
     protected function casts(): array

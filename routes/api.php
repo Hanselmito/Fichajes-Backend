@@ -28,8 +28,11 @@ Route::get('/reports', $todo('reports.index'));
 Route::get('/work-hours', $todo('work-hours.index'));
 
 Route::apiResource('users', \App\Http\Controllers\Api\UserController::class);
+Route::post('/zones/{zone}/regenerate-qr', [\App\Http\Controllers\Api\ZoneController::class, 'regenerateQr']);
 Route::apiResource('zones', \App\Http\Controllers\Api\ZoneController::class);
 Route::get('/zones-minimal', $todo('zones-minimal.index'));
+Route::get('/clients/qr/{qrCode}', [\App\Http\Controllers\Api\ClientController::class, 'lookupByQr']);
+Route::post('/clients/{client}/regenerate-qr', [\App\Http\Controllers\Api\ClientController::class, 'regenerateQr']);
 Route::apiResource('clients', \App\Http\Controllers\Api\ClientController::class);
 Route::put('/records/{record}/confirm', [\App\Http\Controllers\Api\RecordController::class, 'confirm']);
 Route::apiResource('records', \App\Http\Controllers\Api\RecordController::class);
