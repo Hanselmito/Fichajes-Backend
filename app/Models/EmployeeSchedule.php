@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class EmployeeSchedule extends Model
 {
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $table = 'employee_schedules';
 
     protected $guarded = [];

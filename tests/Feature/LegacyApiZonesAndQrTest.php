@@ -90,6 +90,25 @@ class LegacyApiZonesAndQrTest extends TestCase
             ->assertJsonPath('client.name', 'Cliente QR');
     }
 
+    public function test_zones_minimal_returns_reduced_zone_payload(): void
+    {
+        $zoneId = $this->nextLegacyId('zones');
+
+        DB::table('zones')->insert([
+            'id' => $zoneId,
+            'name' => 'Zona Minima',
+            'qr_code' => 'ZONEMINTEST',
+        ]);
+
+        $response = $this->withAdminToken()->getJson('/api/zones-minimal');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonFragment(['id' => $zoneId, 'name' => 'Zona Minima'])
+            ->assertJsonMissingPath('zones.0.address');
+    }
+
     private function withAdminToken(): self
     {
         $token = $this->postJson('/api/auth/login', [

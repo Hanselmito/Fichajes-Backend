@@ -30,7 +30,9 @@ Route::get('/work-hours', $todo('work-hours.index'));
 Route::apiResource('users', \App\Http\Controllers\Api\UserController::class);
 Route::post('/zones/{zone}/regenerate-qr', [\App\Http\Controllers\Api\ZoneController::class, 'regenerateQr']);
 Route::apiResource('zones', \App\Http\Controllers\Api\ZoneController::class);
-Route::get('/zones-minimal', $todo('zones-minimal.index'));
+Route::get('/zones-minimal', [\App\Http\Controllers\Api\ZoneController::class, 'minimal']);
+Route::post('/clients/geocode', [\App\Http\Controllers\Api\ClientController::class, 'geocode']);
+Route::post('/clients/geocode-all', [\App\Http\Controllers\Api\ClientController::class, 'geocodeAll']);
 Route::get('/clients/qr/{qrCode}', [\App\Http\Controllers\Api\ClientController::class, 'lookupByQr']);
 Route::post('/clients/{client}/regenerate-qr', [\App\Http\Controllers\Api\ClientController::class, 'regenerateQr']);
 Route::apiResource('clients', \App\Http\Controllers\Api\ClientController::class);
@@ -70,13 +72,23 @@ Route::put('/employee-schedules/{employeeSchedule}', $todo('employee-schedules.u
 
 Route::get('/schedule-history', $todo('schedule-history.index'));
 
-Route::get('/schedules', \App\Http\Controllers\Api\ScheduleController::class . '@index');
-Route::post('/schedules', \App\Http\Controllers\Api\ScheduleController::class . '@store');
+Route::get('/schedules/status/today', [\App\Http\Controllers\Api\ScheduleController::class, 'index']);
+Route::get('/schedules/{employee}', [\App\Http\Controllers\Api\ScheduleController::class, 'show']);
+Route::get('/schedules', [\App\Http\Controllers\Api\ScheduleController::class, 'index']);
+Route::post('/schedules', [\App\Http\Controllers\Api\ScheduleController::class, 'store']);
 
-Route::get('/quadrants', $todo('quadrants.index'));
-Route::post('/quadrants', $todo('quadrants.store'));
-Route::put('/quadrants/{quadrant}', $todo('quadrants.update'));
-Route::delete('/quadrants/{quadrant}', $todo('quadrants.destroy'));
+Route::get('/quadrants/{quadrant}/assignments/{assignment}/exceptions', [\App\Http\Controllers\Api\QuadrantController::class, 'exceptions']);
+Route::post('/quadrants/{quadrant}/assignments/{assignment}/exceptions', [\App\Http\Controllers\Api\QuadrantController::class, 'storeException']);
+Route::delete('/quadrants/{quadrant}/assignments/{assignment}/exceptions/{exception}', [\App\Http\Controllers\Api\QuadrantController::class, 'destroyException']);
+Route::get('/quadrants/{quadrant}/assignments', [\App\Http\Controllers\Api\QuadrantController::class, 'assignments']);
+Route::post('/quadrants/{quadrant}/assignments', [\App\Http\Controllers\Api\QuadrantController::class, 'storeAssignment']);
+Route::put('/quadrants/{quadrant}/assignments/{assignment}', [\App\Http\Controllers\Api\QuadrantController::class, 'updateAssignment']);
+Route::delete('/quadrants/{quadrant}/assignments/{assignment}', [\App\Http\Controllers\Api\QuadrantController::class, 'destroyAssignment']);
+Route::get('/quadrants/{quadrant}', [\App\Http\Controllers\Api\QuadrantController::class, 'show']);
+Route::get('/quadrants', [\App\Http\Controllers\Api\QuadrantController::class, 'index']);
+Route::post('/quadrants', [\App\Http\Controllers\Api\QuadrantController::class, 'store']);
+Route::put('/quadrants/{quadrant}', [\App\Http\Controllers\Api\QuadrantController::class, 'update']);
+Route::delete('/quadrants/{quadrant}', [\App\Http\Controllers\Api\QuadrantController::class, 'destroy']);
 
 Route::get('/services', $todo('services.index'));
 Route::post('/services', $todo('services.store'));
