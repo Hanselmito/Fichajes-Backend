@@ -10,6 +10,7 @@ use App\Models\VacationRequest;
 use App\Models\ZoneHoliday;
 use App\Support\LegacyApiAuth;
 use App\Support\LegacyScheduleHistory;
+use App\Support\LegacyWorkedHours;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -20,6 +21,7 @@ class WorkHoursController extends Controller
     public function __construct(
         private readonly LegacyApiAuth $legacyApiAuth,
         private readonly LegacyScheduleHistory $scheduleHistory,
+        private readonly LegacyWorkedHours $workedHours,
     ) {
     }
 
@@ -101,8 +103,9 @@ class WorkHoursController extends Controller
 
         $vacationDays = $this->approvedVacationDays($employeeId, $periodStart, $periodEnd);
         $holidayDays = $this->holidayDays($user, $periodStart, $periodEnd);
+        $breaksByRecordId = $this->workedHours->loadBreaksByRecordId($employeeId, $periodStart->toDateString(), $periodEnd->toDateString());
         $records = Record::query()
-            ->selectRaw('DATE(timestamp) as work_date, type, timestamp')
+            ->selectRaw('id, DATE(timestamp) as work_date, type, timestamp')
             ->where('employee_id', $employeeId)
             ->whereBetween(DB::raw('DATE(timestamp)'), [$periodStart->toDateString(), $periodEnd->toDateString()])
             ->orderBy('timestamp')
@@ -132,7 +135,7 @@ class WorkHoursController extends Controller
             }
 
             $workDays++;
-            $dayHours = $this->calculateHoursFromRecords($records->get($date)?->all() ?? [], false);
+            $dayHours = $this->workedHours->calculateHoursFromRecords($records->get($date)?->all() ?? [], $breaksByRecordId, false);
             $totalMinutes += (int) round($dayHours * 60);
             $daysDetail[] = [
                 'date' => $date,
@@ -236,41 +239,18 @@ class WorkHoursController extends Controller
     private function calculateWorkedHours(int $employeeId, string $startDate, string $endDate, bool $openShiftCountsUntilNow): float
     {
         $records = Record::query()
-            ->select(['type', 'timestamp'])
+            ->select(['id', 'type', 'timestamp'])
             ->where('employee_id', $employeeId)
             ->whereBetween(DB::raw('DATE(timestamp)'), [$startDate, $endDate])
             ->orderBy('timestamp')
             ->get()
             ->all();
 
-        return $this->calculateHoursFromRecords($records, $openShiftCountsUntilNow);
-    }
-
-    private function calculateHoursFromRecords(array $records, bool $openShiftCountsUntilNow): float
-    {
-        $totalMinutes = 0;
-        $lastEntrada = null;
-
-        foreach ($records as $record) {
-            $type = is_array($record) ? $record['type'] : $record->type;
-            $timestamp = Carbon::parse(is_array($record) ? $record['timestamp'] : $record->timestamp);
-
-            if ($type === 'entrada') {
-                $lastEntrada = $timestamp;
-                continue;
-            }
-
-            if ($type === 'salida' && $lastEntrada) {
-                $totalMinutes += $lastEntrada->diffInMinutes($timestamp);
-                $lastEntrada = null;
-            }
-        }
-
-        if ($openShiftCountsUntilNow && $lastEntrada) {
-            $totalMinutes += $lastEntrada->diffInMinutes(now());
-        }
-
-        return round($totalMinutes / 60, 2);
+        return $this->workedHours->calculateHoursFromRecords(
+            $records,
+            $this->workedHours->loadBreaksByRecordId($employeeId, $startDate, $endDate),
+            $openShiftCountsUntilNow,
+        );
     }
 
     private function approvedVacationDays(int $employeeId, Carbon $periodStart, Carbon $periodEnd): array

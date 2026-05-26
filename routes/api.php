@@ -3,6 +3,9 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EmployeeScheduleController;
+use App\Http\Controllers\Api\BreakController;
+use App\Http\Controllers\Api\ModificationController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ReportsController;
 use App\Http\Controllers\Api\ScheduleHistoryController;
 use App\Http\Controllers\Api\ServiceController;
@@ -53,20 +56,28 @@ Route::post('/vacation-requests', $todo('vacation-requests.store'));
 Route::put('/vacation-requests/{vacationRequest}', $todo('vacation-requests.update'));
 Route::delete('/vacation-requests/{vacationRequest}', $todo('vacation-requests.destroy'));
 
-Route::get('/notifications', \App\Http\Controllers\Api\NotificationController::class . '@index');
-Route::delete('/notifications/{notification}', \App\Http\Controllers\Api\NotificationController::class . '@destroy');
-Route::put('/notifications/{notification}/read', $todo('notifications.read'));
-Route::put('/notifications/read-all', $todo('notifications.read-all'));
-Route::get('/notifications/settings', $todo('notifications.settings.show'));
-Route::put('/notifications/settings', $todo('notifications.settings.update'));
+Route::get('/notifications', [NotificationController::class, 'index']);
+Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
+Route::put('/notifications/{notification}/read', [NotificationController::class, 'read']);
+Route::put('/notifications/read-all', [NotificationController::class, 'readAll']);
+Route::get('/notifications/settings', [NotificationController::class, 'settings']);
+Route::put('/notifications/settings', [NotificationController::class, 'updateSettings']);
 
-Route::get('/modifications', $todo('modifications.index'));
-Route::post('/modifications', $todo('modifications.store'));
-Route::put('/modifications/{modification}', $todo('modifications.update'));
+Route::get('/modifications', [ModificationController::class, 'indexRequests']);
+Route::post('/modifications', [ModificationController::class, 'storeRequest']);
+Route::get('/modifications/requests', [ModificationController::class, 'indexRequests']);
+Route::post('/modifications/requests', [ModificationController::class, 'storeRequest']);
+Route::put('/modifications/requests/{modificationRequest}/approve', [ModificationController::class, 'approveRequest']);
+Route::put('/modifications/requests/{modificationRequest}/reject', [ModificationController::class, 'rejectRequest']);
+Route::get('/modifications/confirmations', [ModificationController::class, 'listConfirmations']);
+Route::post('/modifications/confirmations', [ModificationController::class, 'storeConfirmation']);
+Route::put('/modifications/confirmations/{confirmation}/confirm', [ModificationController::class, 'confirmConfirmation']);
+Route::put('/modifications/confirmations/{confirmation}/reject', [ModificationController::class, 'rejectConfirmation']);
 
-Route::get('/breaks', $todo('breaks.index'));
-Route::post('/breaks', $todo('breaks.store'));
-Route::put('/breaks/{break}', $todo('breaks.update'));
+Route::get('/breaks', [BreakController::class, 'index']);
+Route::post('/breaks', [BreakController::class, 'store']);
+Route::put('/breaks', [BreakController::class, 'update']);
+Route::put('/breaks/{break}', [BreakController::class, 'update']);
 
 Route::get('/calendars', $todo('calendars.index'));
 Route::post('/calendars', $todo('calendars.store'));
