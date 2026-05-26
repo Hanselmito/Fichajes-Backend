@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Schedule;
 use App\Models\ScheduleAssignment;
 use App\Models\ScheduleException;
+use App\Models\Service;
 use App\Models\User;
 use App\Support\LegacyApiAuth;
 use Illuminate\Database\Eloquent\Builder;
@@ -329,6 +330,11 @@ class QuadrantController extends Controller
         }
 
         $data = $validator->validated();
+        $serviceContext = $this->validateAssignmentServices($data['client_id'], $data['services'] ?? [], $data['start_time'], $data['end_time']);
+        if ($serviceContext !== null && ($serviceContext['error'] ?? null)) {
+            return response()->json(['success' => false, 'message' => $serviceContext['error']], 422);
+        }
+
         $assignment = ScheduleAssignment::query()->create([
             'id' => $this->nextLegacyId('schedule_assignments'),
             'schedule_id' => $quadrant->id,
@@ -337,7 +343,7 @@ class QuadrantController extends Controller
             'day_of_week' => $data['day_of_week'],
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
-            'services' => $data['services'] ?? null,
+            'services' => $serviceContext['service_ids'] ?? null,
             'notes' => $data['notes'] ?? null,
             'is_active' => true,
         ]);
@@ -388,6 +394,19 @@ class QuadrantController extends Controller
         $data = $validator->validated();
         if ($data === []) {
             return response()->json(['success' => false, 'message' => 'Nada que actualizar'], 400);
+        }
+
+        $clientId = (int) ($data['client_id'] ?? $assignment->client_id);
+        $startTime = (string) ($data['start_time'] ?? $assignment->start_time);
+        $endTime = (string) ($data['end_time'] ?? $assignment->end_time);
+        $services = $data['services'] ?? ($assignment->services ?? []);
+        $serviceContext = $this->validateAssignmentServices($clientId, is_array($services) ? $services : [], $startTime, $endTime);
+        if ($serviceContext !== null && ($serviceContext['error'] ?? null)) {
+            return response()->json(['success' => false, 'message' => $serviceContext['error']], 422);
+        }
+
+        if (array_key_exists('services', $data)) {
+            $data['services'] = $serviceContext['service_ids'] ?? null;
         }
 
         $assignment->fill($data)->save();
@@ -628,9 +647,17 @@ class QuadrantController extends Controller
             ->get();
 
         $clientCoords = null;
+        $requiredServices = collect();
+        $requiredServiceIds = [];
+        $requiredDuration = 0;
         if (! empty($data['client_id'])) {
             $clientCoords = Client::query()->select(['id', 'latitude', 'longitude'])->find($data['client_id']);
+            $requiredServices = $this->loadClientServices((int) $data['client_id']);
+            $requiredServiceIds = $requiredServices->pluck('id')->all();
+            $requiredDuration = (int) $requiredServices->sum('duration_minutes');
         }
+
+        $slotMinutes = Carbon::createFromFormat('H:i', $data['start_time'])->diffInMinutes(Carbon::createFromFormat('H:i', $data['end_time']));
 
         $result = $employees->map(function (User $employee) use ($data, $weekStart, $clientCoords): array {
             $visits = ScheduleAssignment::query()
@@ -710,6 +737,11 @@ class QuadrantController extends Controller
             'employees' => $result,
             'clients' => $clients,
             'cliente_ocupado' => $busyClient,
+            'required_services' => $requiredServices->map(fn (Service $service): array => $this->serializeService($service))->values(),
+            'required_service_ids' => $requiredServiceIds,
+            'required_service_duration_minutes' => $requiredDuration,
+            'selected_slot_minutes' => $slotMinutes,
+            'service_time_fit' => $requiredDuration === 0 ? true : $slotMinutes >= $requiredDuration,
         ]);
     }
 
@@ -723,6 +755,11 @@ class QuadrantController extends Controller
 
     private function serializeAssignment(ScheduleAssignment $assignment): array
     {
+        $serviceIds = $this->normalizeServiceIds($assignment->services ?? []);
+        $services = $this->loadServicesByIds($serviceIds);
+        $clientServiceIds = $assignment->client_id ? $this->loadClientServiceIds((int) $assignment->client_id) : [];
+        $missingClientServices = array_values(array_diff($clientServiceIds, $serviceIds));
+
         return array_merge($assignment->withoutRelations()->toArray(), [
             'employee_name' => $assignment->employee?->name,
             'client_name' => $assignment->client?->name,
@@ -730,6 +767,12 @@ class QuadrantController extends Controller
             'client_city' => $assignment->client?->city,
             'latitude' => $assignment->client?->latitude,
             'longitude' => $assignment->client?->longitude,
+            'services' => $serviceIds,
+            'service_details' => $services->map(fn (Service $service): array => $this->serializeService($service))->values(),
+            'services_duration_minutes' => (int) $services->sum('duration_minutes'),
+            'client_service_ids' => $clientServiceIds,
+            'missing_client_service_ids' => $missingClientServices,
+            'service_coverage_complete' => $missingClientServices === [],
         ]);
     }
 
@@ -782,6 +825,8 @@ class QuadrantController extends Controller
     {
         $today = Carbon::today();
         $now = Carbon::now();
+        $requiredServices = $this->loadClientServices($clientId);
+        $requiredServiceIds = $requiredServices->pluck('id')->all();
 
         $activeAssignments = $assignments
             ->filter(function (array $assignment) use ($today, $now): bool {
@@ -833,12 +878,28 @@ class QuadrantController extends Controller
                 continue;
             }
 
+            $assignmentServiceIds = $this->normalizeServiceIds($assignment['services'] ?? []);
+            $missingServiceIds = array_values(array_diff($requiredServiceIds, $assignmentServiceIds));
+            if ($missingServiceIds !== []) {
+                $missingServices = $this->loadServicesByIds($missingServiceIds)->pluck('name')->implode(', ');
+
+                return [
+                    'tone' => 'warning',
+                    'label' => 'Cobertura parcial, faltan servicios: ' . $missingServices,
+                    'employee_id' => $assignment['employee_id'] ?? null,
+                    'employee_name' => $assignment['employee_name'] ?? null,
+                    'delay' => '00:00',
+                    'coverage_complete' => false,
+                ];
+            }
+
             return [
                 'tone' => 'info',
                 'label' => 'Usuario acompañado por: '.($assignment['employee_name'] ?? 'Empleado asignado'),
                 'employee_id' => $assignment['employee_id'] ?? null,
                 'employee_name' => $assignment['employee_name'] ?? null,
                 'delay' => '00:00',
+                'coverage_complete' => true,
             ];
         }
 
@@ -853,6 +914,7 @@ class QuadrantController extends Controller
                 'employee_id' => $firstAssignment['employee_id'] ?? null,
                 'employee_name' => $firstAssignment['employee_name'] ?? null,
                 'delay' => '00:00',
+                'coverage_complete' => $requiredServiceIds === [],
             ];
         }
 
@@ -862,6 +924,82 @@ class QuadrantController extends Controller
             'employee_id' => $firstAssignment['employee_id'] ?? null,
             'employee_name' => $firstAssignment['employee_name'] ?? null,
             'delay' => $this->formatDelayMinutesAsClock($delayMinutes),
+            'coverage_complete' => false,
+        ];
+    }
+
+    private function validateAssignmentServices(int $clientId, array $serviceIds, string $startTime, string $endTime): ?array
+    {
+        $normalizedIds = $this->normalizeServiceIds($serviceIds);
+        if ($normalizedIds === []) {
+            return ['service_ids' => null];
+        }
+
+        $services = $this->loadServicesByIds($normalizedIds);
+        if ($services->count() !== count($normalizedIds)) {
+            return ['error' => 'Alguno de los servicios seleccionados no existe'];
+        }
+
+        $slotMinutes = Carbon::createFromFormat('H:i', substr($startTime, 0, 5))->diffInMinutes(Carbon::createFromFormat('H:i', substr($endTime, 0, 5)));
+        $requiredMinutes = (int) $services->sum('duration_minutes');
+        if ($requiredMinutes > $slotMinutes) {
+            return ['error' => 'La duracion total de los servicios supera el hueco asignado'];
+        }
+
+        $clientServiceIds = $this->loadClientServiceIds($clientId);
+        $invalidForClient = array_values(array_diff($normalizedIds, $clientServiceIds));
+        if ($clientServiceIds !== [] && $invalidForClient !== []) {
+            return ['error' => 'La visita incluye servicios no asignados al usuario'];
+        }
+
+        return ['service_ids' => $normalizedIds];
+    }
+
+    private function normalizeServiceIds(mixed $value): array
+    {
+        $serviceIds = is_array($value) ? $value : [];
+
+        return array_values(array_unique(array_filter(array_map(static fn ($serviceId): int => (int) $serviceId, $serviceIds), static fn (int $serviceId): bool => $serviceId > 0)));
+    }
+
+    private function loadClientServiceIds(int $clientId): array
+    {
+        return \Illuminate\Support\Facades\DB::table('client_services')
+            ->where('client_id', $clientId)
+            ->pluck('service_id')
+            ->map(static fn ($serviceId): int => (int) $serviceId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function loadClientServices(int $clientId): Collection
+    {
+        $serviceIds = $this->loadClientServiceIds($clientId);
+
+        return $this->loadServicesByIds($serviceIds);
+    }
+
+    private function loadServicesByIds(array $serviceIds): Collection
+    {
+        if ($serviceIds === []) {
+            return collect();
+        }
+
+        return Service::query()
+            ->whereIn('id', $serviceIds)
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function serializeService(Service $service): array
+    {
+        return [
+            'id' => (int) $service->id,
+            'name' => $service->name,
+            'duration_minutes' => (int) $service->duration_minutes,
+            'color' => $service->color,
+            'active' => (bool) $service->active,
         ];
     }
 
