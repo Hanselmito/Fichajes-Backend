@@ -1,6 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\EmployeeScheduleController;
+use App\Http\Controllers\Api\ReportsController;
+use App\Http\Controllers\Api\ScheduleHistoryController;
+use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\WorkHoursController;
 use Illuminate\Support\Facades\Route;
 
 $todo = static fn (string $endpoint) => static function () use ($endpoint) {
@@ -23,9 +29,10 @@ Route::prefix('auth')->group(function () use ($todo) {
     Route::get('/me', [AuthController::class, 'me']);
 });
 
-Route::get('/dashboard', $todo('dashboard.index'));
-Route::get('/reports', $todo('reports.index'));
-Route::get('/work-hours', $todo('work-hours.index'));
+Route::get('/dashboard', [DashboardController::class, 'index']);
+Route::get('/reports', [ReportsController::class, 'index']);
+Route::get('/reports/{mode}', [ReportsController::class, 'index']);
+Route::get('/work-hours', [WorkHoursController::class, 'index']);
 
 Route::apiResource('users', \App\Http\Controllers\Api\UserController::class);
 Route::post('/zones/{zone}/regenerate-qr', [\App\Http\Controllers\Api\ZoneController::class, 'regenerateQr']);
@@ -66,11 +73,11 @@ Route::post('/calendars', $todo('calendars.store'));
 Route::put('/calendars/{calendar}', $todo('calendars.update'));
 Route::delete('/calendars/{calendar}', $todo('calendars.destroy'));
 
-Route::get('/employee-schedules', $todo('employee-schedules.index'));
-Route::post('/employee-schedules', $todo('employee-schedules.store'));
-Route::put('/employee-schedules/{employeeSchedule}', $todo('employee-schedules.update'));
+Route::get('/employee-schedules', [EmployeeScheduleController::class, 'index']);
+Route::post('/employee-schedules', [EmployeeScheduleController::class, 'store']);
+Route::put('/employee-schedules/{employeeSchedule}', [EmployeeScheduleController::class, 'update']);
 
-Route::get('/schedule-history', $todo('schedule-history.index'));
+Route::get('/schedule-history', [ScheduleHistoryController::class, 'index']);
 
 Route::get('/schedules/status/today', [\App\Http\Controllers\Api\ScheduleController::class, 'index']);
 Route::get('/schedules/{employee}', [\App\Http\Controllers\Api\ScheduleController::class, 'show']);
@@ -90,10 +97,10 @@ Route::post('/quadrants', [\App\Http\Controllers\Api\QuadrantController::class, 
 Route::put('/quadrants/{quadrant}', [\App\Http\Controllers\Api\QuadrantController::class, 'update']);
 Route::delete('/quadrants/{quadrant}', [\App\Http\Controllers\Api\QuadrantController::class, 'destroy']);
 
-Route::get('/services', $todo('services.index'));
-Route::post('/services', $todo('services.store'));
-Route::put('/services/{service}', $todo('services.update'));
-Route::delete('/services/{service}', $todo('services.destroy'));
+Route::get('/services', [ServiceController::class, 'index']);
+Route::post('/services', [ServiceController::class, 'store']);
+Route::put('/services/{service}', [ServiceController::class, 'update']);
+Route::delete('/services/{service}', [ServiceController::class, 'destroy']);
 
 Route::get('/zone-holidays', $todo('zone-holidays.index'));
 Route::post('/zone-holidays', $todo('zone-holidays.store'));

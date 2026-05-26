@@ -9,6 +9,10 @@ class ClientService extends Pivot
 {
     public $timestamps = false;
 
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $table = 'client_services';
 
     protected $guarded = [];
