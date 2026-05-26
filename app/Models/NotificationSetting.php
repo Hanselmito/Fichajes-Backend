@@ -9,6 +9,10 @@ class NotificationSetting extends Model
 {
     public $timestamps = false;
 
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $table = 'notification_settings';
 
     protected $guarded = [];

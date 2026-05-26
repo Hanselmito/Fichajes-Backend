@@ -13,6 +13,7 @@ use App\Models\VacationRequest;
 use App\Models\ZoneHoliday;
 use App\Support\LegacyApiAuth;
 use App\Support\LegacyScheduleHistory;
+use App\Support\LegacyWorkedHours;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class DashboardController extends Controller
     public function __construct(
         private readonly LegacyApiAuth $legacyApiAuth,
         private readonly LegacyScheduleHistory $scheduleHistory,
+        private readonly LegacyWorkedHours $workedHours,
     ) {
     }
 
@@ -74,6 +76,7 @@ class DashboardController extends Controller
         $todayClients = $this->todayClientAssignments($employeeIds);
         $weekAssignments = $this->currentWeekAssignments($employeeIds, $weekStart);
         $todayHolidayMap = $this->todayHolidayMap($employees);
+        $weekBreaks = $this->workedHours->loadBreaksByEmployeeAndRecord($employeeIds, $weekStart->toDateString(), now()->toDateString());
 
         $lastRecords = Record::query()
             ->select(['employee_id', 'type', 'timestamp'])
@@ -84,14 +87,14 @@ class DashboardController extends Controller
             ->keyBy('employee_id');
 
         $weekRecords = Record::query()
-            ->select(['employee_id', 'type', 'timestamp'])
+            ->select(['id', 'employee_id', 'type', 'timestamp'])
             ->whereIn('employee_id', $employeeIds)
             ->whereBetween(DB::raw('DATE(timestamp)'), [$weekStart->toDateString(), now()->toDateString()])
             ->orderBy('timestamp')
             ->get()
             ->groupBy('employee_id');
 
-        $result = $employees->map(function (User $employee) use ($lastRecords, $activeLeaves, $todayClients, $weekAssignments, $todayHolidayMap, $weekRecords): array {
+        $result = $employees->map(function (User $employee) use ($lastRecords, $activeLeaves, $todayClients, $weekAssignments, $todayHolidayMap, $weekRecords, $weekBreaks): array {
             $lastRecord = $lastRecords->get($employee->id);
             $status = 'ausente';
             $lastAction = $lastRecord?->type;
@@ -106,7 +109,11 @@ class DashboardController extends Controller
                 $status = 'vacaciones';
             }
 
-            $hoursWorked = $this->hoursFromRecordCollection($weekRecords->get($employee->id)?->all() ?? [], true);
+            $hoursWorked = $this->workedHours->calculateHoursFromRecords(
+                $weekRecords->get($employee->id)?->all() ?? [],
+                $weekBreaks[(int) $employee->id] ?? [],
+                true,
+            );
             $weeklyHours = $this->resolveWeeklyHours($employee);
             $withinSchedule = $this->withinSchedule($employee) && ! ($todayHolidayMap[(int) $employee->id] ?? false);
             $currentClient = $todayClients[(int) $employee->id] ?? null;
@@ -335,28 +342,6 @@ class DashboardController extends Controller
         }
 
         return $result;
-    }
-
-    private function hoursFromRecordCollection(array $records, bool $includeOpenShift): float
-    {
-        $totalMinutes = 0;
-        $lastEntrada = null;
-        foreach ($records as $record) {
-            $timestamp = Carbon::parse($record->timestamp);
-            if ($record->type === 'entrada') {
-                $lastEntrada = $timestamp;
-                continue;
-            }
-            if ($record->type === 'salida' && $lastEntrada) {
-                $totalMinutes += $lastEntrada->diffInMinutes($timestamp);
-                $lastEntrada = null;
-            }
-        }
-        if ($includeOpenShift && $lastEntrada) {
-            $totalMinutes += $lastEntrada->diffInMinutes(now());
-        }
-
-        return round($totalMinutes / 60, 2);
     }
 
     private function resolveStatusDisplay(User $employee, string $status, ?array $leave, bool $withinSchedule): array
