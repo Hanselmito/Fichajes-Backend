@@ -1,15 +1,21 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BolsaAnotacionController;
+use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\EmployeeScheduleController;
 use App\Http\Controllers\Api\BreakController;
 use App\Http\Controllers\Api\ModificationController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\QrGeneratorController;
 use App\Http\Controllers\Api\ReportsController;
 use App\Http\Controllers\Api\ScheduleHistoryController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\ToleranceController;
+use App\Http\Controllers\Api\VacationRequestController;
 use App\Http\Controllers\Api\WorkHoursController;
+use App\Http\Controllers\Api\ZoneHolidayController;
 use Illuminate\Support\Facades\Route;
 
 $todo = static fn (string $endpoint) => static function () use ($endpoint) {
@@ -49,12 +55,17 @@ Route::apiResource('clients', \App\Http\Controllers\Api\ClientController::class)
 Route::put('/records/{record}/confirm', [\App\Http\Controllers\Api\RecordController::class, 'confirm']);
 Route::apiResource('records', \App\Http\Controllers\Api\RecordController::class);
 Route::apiResource('incidencias', \App\Http\Controllers\Api\IncidenciaController::class);
+Route::put('/incidencias', [\App\Http\Controllers\Api\IncidenciaController::class, 'update']);
+Route::delete('/incidencias', [\App\Http\Controllers\Api\IncidenciaController::class, 'destroy']);
 Route::apiResource('vacations', \App\Http\Controllers\Api\VacationController::class);
 
-Route::get('/vacation-requests', $todo('vacation-requests.index'));
-Route::post('/vacation-requests', $todo('vacation-requests.store'));
-Route::put('/vacation-requests/{vacationRequest}', $todo('vacation-requests.update'));
-Route::delete('/vacation-requests/{vacationRequest}', $todo('vacation-requests.destroy'));
+Route::get('/vacation-requests/stats', [VacationRequestController::class, 'stats']);
+Route::get('/vacation-requests', [VacationRequestController::class, 'index']);
+Route::get('/vacation-requests/{vacationRequest}', [VacationRequestController::class, 'show']);
+Route::post('/vacation-requests', [VacationRequestController::class, 'store']);
+Route::put('/vacation-requests/{vacationRequest}/approve', [VacationRequestController::class, 'approve']);
+Route::put('/vacation-requests/{vacationRequest}/reject', [VacationRequestController::class, 'reject']);
+Route::delete('/vacation-requests/{vacationRequest}', [VacationRequestController::class, 'destroy']);
 
 Route::get('/notifications', [NotificationController::class, 'index']);
 Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
@@ -79,10 +90,13 @@ Route::post('/breaks', [BreakController::class, 'store']);
 Route::put('/breaks', [BreakController::class, 'update']);
 Route::put('/breaks/{break}', [BreakController::class, 'update']);
 
-Route::get('/calendars', $todo('calendars.index'));
-Route::post('/calendars', $todo('calendars.store'));
-Route::put('/calendars/{calendar}', $todo('calendars.update'));
-Route::delete('/calendars/{calendar}', $todo('calendars.destroy'));
+Route::get('/calendars', [CalendarController::class, 'index']);
+Route::post('/calendars', [CalendarController::class, 'store']);
+Route::put('/calendars/{calendar}', [CalendarController::class, 'update']);
+Route::delete('/calendars/{calendar}', [CalendarController::class, 'destroy']);
+Route::get('/calendars/{calendar}/holidays', [CalendarController::class, 'holidays']);
+Route::post('/calendars/{calendar}/holidays', [CalendarController::class, 'storeHoliday']);
+Route::delete('/calendars/{calendar}/holidays/{holidayId}', [CalendarController::class, 'destroyHoliday']);
 
 Route::get('/employee-schedules', [EmployeeScheduleController::class, 'index']);
 Route::post('/employee-schedules', [EmployeeScheduleController::class, 'store']);
@@ -113,16 +127,24 @@ Route::post('/services', [ServiceController::class, 'store']);
 Route::put('/services/{service}', [ServiceController::class, 'update']);
 Route::delete('/services/{service}', [ServiceController::class, 'destroy']);
 
-Route::get('/zone-holidays', $todo('zone-holidays.index'));
-Route::post('/zone-holidays', $todo('zone-holidays.store'));
-Route::delete('/zone-holidays/{zoneHoliday}', $todo('zone-holidays.destroy'));
+Route::get('/zone-holidays', [ZoneHolidayController::class, 'index']);
+Route::post('/zone-holidays', [ZoneHolidayController::class, 'store']);
+Route::delete('/zone-holidays', [ZoneHolidayController::class, 'destroy']);
+Route::delete('/zone-holidays/{zoneHoliday}', [ZoneHolidayController::class, 'destroy']);
 
-Route::get('/tolerance', $todo('tolerance.show'));
-Route::put('/tolerance', $todo('tolerance.update'));
+Route::get('/tolerance', [ToleranceController::class, 'showZone']);
+Route::put('/tolerance', [ToleranceController::class, 'updateZone']);
+Route::get('/tolerance/zone', [ToleranceController::class, 'showZone']);
+Route::put('/tolerance/zone', [ToleranceController::class, 'updateZone']);
+Route::get('/tolerance/employee/{employeeId}', [ToleranceController::class, 'showEmployee']);
+Route::put('/tolerance/employee/{employeeId}', [ToleranceController::class, 'updateEmployee']);
+Route::put('/tolerance/employee/{employeeId}/all', [ToleranceController::class, 'updateEmployeeAll']);
+Route::get('/tolerance/presets', [ToleranceController::class, 'presets']);
 
-Route::get('/bolsa-anotaciones', $todo('bolsa-anotaciones.index'));
-Route::post('/bolsa-anotaciones', $todo('bolsa-anotaciones.store'));
-Route::put('/bolsa-anotaciones/{anotacion}', $todo('bolsa-anotaciones.update'));
-Route::delete('/bolsa-anotaciones/{anotacion}', $todo('bolsa-anotaciones.destroy'));
+Route::get('/bolsa-anotaciones', [BolsaAnotacionController::class, 'index']);
+Route::post('/bolsa-anotaciones', [BolsaAnotacionController::class, 'store']);
+Route::put('/bolsa-anotaciones/{anotacion}', [BolsaAnotacionController::class, 'update']);
+Route::delete('/bolsa-anotaciones/{anotacion}', [BolsaAnotacionController::class, 'destroy']);
 
-Route::post('/qr-generator', $todo('qr-generator.store'));
+Route::get('/qr-generator', [QrGeneratorController::class, 'show']);
+Route::post('/qr-generator', [QrGeneratorController::class, 'show']);

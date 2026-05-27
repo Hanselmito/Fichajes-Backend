@@ -9,6 +9,10 @@ class Incidencia extends Model
 {
     protected $table = 'incidencias';
 
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $guarded = [];
 
     protected function casts(): array

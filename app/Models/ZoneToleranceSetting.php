@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class ZoneToleranceSetting extends Model
 {
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $table = 'zone_tolerance_settings';
 
     protected $guarded = [];
