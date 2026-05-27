@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ZoneHoliday extends Model
+class BolsaAnotacion extends Model
 {
     const UPDATED_AT = null;
 
@@ -13,7 +13,7 @@ class ZoneHoliday extends Model
 
     protected $keyType = 'int';
 
-    protected $table = 'zone_holidays';
+    protected $table = 'bolsa_anotaciones';
 
     protected $guarded = [];
 
@@ -21,14 +21,15 @@ class ZoneHoliday extends Model
     {
         return [
             'date' => 'date',
-            'recurring' => 'boolean',
+            'affects_hours' => 'boolean',
+            'hours_adjustment' => 'decimal:2',
             'created_at' => 'datetime',
         ];
     }
 
-    public function zone(): BelongsTo
+    public function employee(): BelongsTo
     {
-        return $this->belongsTo(Zone::class);
+        return $this->belongsTo(User::class, 'employee_id');
     }
 
     public function creator(): BelongsTo
