@@ -2,10 +2,23 @@
 
 Este repositorio debe comportarse como backend puro para un frontend externo en React.
 
+## Estado del contrato
+
+- Base estable actual: `/api`
+- No se mantiene compatibilidad contractual para aliases `.php` ni para el importador externo legacy.
+- El frontend React debe integrarse solo contra rutas Laravel documentadas aqui.
+
 ## Base URL
 
 - Desarrollo local: `http://localhost:8000/api`
 - Healthcheck: `GET /health`
+
+## CORS
+
+- CORS esta declarado explicitamente en el backend.
+- Origenes permitidos por defecto en local: `http://localhost:3000`, `http://127.0.0.1:3000`, `http://localhost:5173`, `http://127.0.0.1:5173`.
+- En despliegue, ajustar `CORS_ALLOWED_ORIGINS` con una lista separada por comas.
+- Si el frontend usa bearer token por header, `supports_credentials=false` es suficiente.
 
 ## Autenticacion
 
@@ -13,6 +26,24 @@ Este repositorio debe comportarse como backend puro para un frontend externo en 
 - Header requerido para endpoints protegidos: `Authorization: Bearer <token>`
 - Sesion actual: `GET /auth/me`
 - Logout: `POST /auth/logout`
+
+Respuesta de login:
+
+```json
+{
+  "success": true,
+  "message": "Login exitoso",
+  "token": "jwt-o-token-propio",
+  "user": {
+    "id": 12,
+    "username": "empleado1",
+    "name": "Empleado Uno",
+    "email": "empleado1@test.local",
+    "role": "employee",
+    "zone_id": 3
+  }
+}
+```
 
 ## Formato de respuesta
 
@@ -31,9 +62,27 @@ Este repositorio debe comportarse como backend puro para un frontend externo en 
 ```json
 {
   "success": false,
-  "message": "..."
+  "message": "...",
+  "errors": {}
 }
 ```
+
+Reglas de consumo:
+
+- `success` manda sobre cualquier heuristica en cliente.
+- Los errores de validacion pueden devolver `422` con `errors` por campo.
+- Algunos endpoints legacy-port devuelven payload especifico fuera de `data`; el frontend debe tiparlos por recurso, no asumir un envoltorio unico.
+
+## Codigos HTTP esperados
+
+- `200`: consulta o mutacion correcta
+- `201`: recurso creado
+- `400`: error funcional legacy o parametros invalidos
+- `401`: token ausente, invalido o expirado
+- `403`: usuario autenticado sin permisos
+- `404`: recurso inexistente o fuera de alcance
+- `422`: validacion Laravel
+- `500`: error interno
 
 ## Recursos principales
 
@@ -128,6 +177,18 @@ Payload de alta:
 - `GET /qr-generator?code={valor}&size=300`
 - Respuesta: `image/png`
 
+## Operaciones internas del backend
+
+- El cron legacy de fichajes faltantes se porta como comando `php artisan legacy:check-missing-checkins`.
+- Debe programarse cada 15 minutos con el scheduler de Laravel.
+- El umbral de auto-confirmacion de fichajes pendientes se controla por `LEGACY_AUTO_CONFIRM_PENDING_RECORDS_DAYS`.
+
+## Limitaciones deliberadas
+
+- El importador externo legacy no forma parte de este backend.
+- El contrato no cubre HTML, Blade, Vite ni recursos de frontend.
+- El frontend React no debe leer ni inferir comportamiento desde `index.html` legacy.
+
 ## Recomendaciones para React
 
 - Centralizar una unica instancia HTTP con `baseURL=/api`.
@@ -135,6 +196,9 @@ Payload de alta:
 - No depender de aliases `.php` del frontend legado; consumir solo rutas Laravel `/api/...`.
 - Tratar `success=false` como error funcional aunque el status HTTP sea `200` en algunos endpoints legacy-port.
 - Mantener tipos separados para recursos nuevos (`vacation-requests`) y legacy (`vacations`) porque no comparten exactamente el mismo modelo.
+- Modelar por separado respuestas JSON y respuestas binarias como `qr-generator`.
+- Centralizar el manejo de `401` para forzar logout o refresco de sesion de cliente.
+- No acoplar el frontend al orden de listas si la API no lo garantiza explicitamente.
 
 ## Decision sobre Vite y Tailwind
 
