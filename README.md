@@ -32,6 +32,12 @@ php artisan key:generate
 php artisan serve
 ```
 
+Scheduler local:
+
+```bash
+php artisan schedule:work
+```
+
 Tests:
 
 ```bash
@@ -48,3 +54,5 @@ La documentacion resumida para el futuro frontend React esta en [docs/API_CONTRA
 - Autenticacion: bearer token
 - El frontend nuevo no debe depender de aliases `.php` del proyecto legado
 - Varias tablas legacy requieren IDs manuales; los controladores ya lo manejan
+- CORS queda controlado por `CORS_ALLOWED_ORIGINS` en el entorno
+- El cron legacy de fichajes faltantes queda portado como comando `legacy:check-missing-checkins` y debe ejecutarse via scheduler de Laravel
