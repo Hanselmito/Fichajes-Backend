@@ -58,6 +58,8 @@ Route::apiResource('incidencias', \App\Http\Controllers\Api\IncidenciaController
 Route::put('/incidencias', [\App\Http\Controllers\Api\IncidenciaController::class, 'update']);
 Route::delete('/incidencias', [\App\Http\Controllers\Api\IncidenciaController::class, 'destroy']);
 Route::apiResource('vacations', \App\Http\Controllers\Api\VacationController::class);
+Route::put('/vacations/{vacation}/approve', [\App\Http\Controllers\Api\VacationController::class, 'approve']);
+Route::put('/vacations/{vacation}/reject', [\App\Http\Controllers\Api\VacationController::class, 'reject']);
 
 Route::get('/vacation-requests/stats', [VacationRequestController::class, 'stats']);
 Route::get('/vacation-requests', [VacationRequestController::class, 'index']);
