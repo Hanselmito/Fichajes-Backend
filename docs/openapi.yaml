@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
   title: Fichaje Backend API
-  version: 1.0.0
+  version: 1.1.0
   description: |
-    Contrato OpenAPI basico del backend Laravel de gestion de fichajes.
-    Esta especificacion esta pensada como base para generar tipos y cliente en React.
-    No cubre aliases .php del legacy ni el importador externo.
+    Contrato OpenAPI ampliado del backend Laravel de gestion de fichajes.
+    Esta especificacion sirve como base para generar tipos y cliente HTTP en React.
+    No cubre aliases `.php` del legacy ni el importador externo.
 servers:
   - url: http://localhost:8000/api
     description: Desarrollo local
@@ -16,18 +16,12 @@ tags:
   - name: Zones
   - name: Clients
   - name: Records
-  - name: Reports
-  - name: WorkHours
-  - name: Vacations
-  - name: VacationRequests
   - name: Notifications
   - name: Breaks
-  - name: Modifications
-  - name: Calendars
-  - name: ZoneHolidays
-  - name: Tolerance
-  - name: BolsaAnotaciones
-  - name: QR
+  - name: VacationRequests
+  - name: Vacations
+  - name: Reports
+  - name: WorkHours
 security:
   - bearerAuth: []
 paths:
@@ -35,6 +29,7 @@ paths:
     get:
       tags: [Health]
       security: []
+      operationId: getHealth
       summary: Healthcheck de la API
       responses:
         '200':
@@ -43,10 +38,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+
   /auth/login:
     post:
       tags: [Auth]
       security: []
+      operationId: login
       summary: Iniciar sesion
       requestBody:
         required: true
@@ -62,20 +59,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
         '401':
-          description: Credenciales invalidas
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/Unauthorized'
         '422':
-          description: Validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
+          $ref: '#/components/responses/ValidationError'
+
   /auth/me:
     get:
       tags: [Auth]
+      operationId: getCurrentUser
       summary: Obtener usuario autenticado
       responses:
         '200':
@@ -86,22 +77,11 @@ paths:
                 $ref: '#/components/schemas/MeResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-  /auth/logout:
-    post:
-      tags: [Auth]
-      summary: Cerrar sesion logica del cliente
-      responses:
-        '200':
-          description: Logout correcto
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+
   /auth/capabilities:
     get:
       tags: [Auth]
+      operationId: getCapabilities
       summary: Obtener capacidades efectivas para navegacion y guards
       responses:
         '200':
@@ -112,9 +92,26 @@ paths:
                 $ref: '#/components/schemas/CapabilitiesResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Cerrar sesion logica del cliente
+      responses:
+        '200':
+          description: Logout correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /users:
     get:
       tags: [Users]
+      operationId: listUsers
       summary: Listar usuarios
       responses:
         '200':
@@ -122,26 +119,104 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     post:
       tags: [Users]
+      operationId: createUser
       summary: Crear usuario
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FreeFormObject'
+              $ref: '#/components/schemas/UserCreateRequest'
       responses:
-        '200':
+        '201':
           description: Usuario creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/UserCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdPath'
+    get:
+      tags: [Users]
+      operationId: getUser
+      summary: Obtener usuario por id
+      responses:
+        '200':
+          description: Usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResourceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Users]
+      operationId: updateUser
+      summary: Actualizar usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Users]
+      operationId: deleteUser
+      summary: Eliminar usuario
+      responses:
+        '200':
+          description: Usuario eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /zones:
     get:
       tags: [Zones]
+      operationId: listZones
       summary: Listar zonas
       responses:
         '200':
@@ -149,26 +224,37 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/ZoneListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags: [Zones]
+      operationId: createZone
       summary: Crear zona
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FreeFormObject'
+              $ref: '#/components/schemas/ZoneCreateRequest'
       responses:
-        '200':
+        '201':
           description: Zona creada
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/ZoneCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
   /zones-minimal:
     get:
       tags: [Zones]
+      operationId: listZonesMinimal
       summary: Listado reducido de zonas
       responses:
         '200':
@@ -176,114 +262,673 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /clients:
+                $ref: '#/components/schemas/ZoneMinimalListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /zones/{zoneId}:
+    parameters:
+      - $ref: '#/components/parameters/ZoneIdPath'
     get:
-      tags: [Clients]
-      summary: Listar clientes
+      tags: [Zones]
+      operationId: getZone
+      summary: Obtener zona por id
       responses:
         '200':
-          description: Lista de clientes
+          description: Zona
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/ZoneResourceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Zones]
+      operationId: updateZone
+      summary: Actualizar zona
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneUpdateRequest'
+      responses:
+        '200':
+          description: Zona actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Zones]
+      operationId: deleteZone
+      summary: Eliminar zona
+      responses:
+        '200':
+          description: Zona eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /zones/{zoneId}/regenerate-qr:
+    parameters:
+      - $ref: '#/components/parameters/ZoneIdPath'
+    post:
+      tags: [Zones]
+      operationId: regenerateZoneQr
+      summary: Regenerar QR de una zona
+      responses:
+        '200':
+          description: QR regenerado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QrRegeneratedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /clients:
+    get:
+      tags: [Clients]
+      operationId: listClients
+      summary: Listar clientes
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: integer
+        - in: query
+          name: week_start
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Lista de clientes o un cliente si se filtra por id
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ClientListResponse'
+                  - $ref: '#/components/schemas/ClientResourceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     post:
       tags: [Clients]
+      operationId: createClient
       summary: Crear cliente
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FreeFormObject'
+              $ref: '#/components/schemas/ClientCreateRequest'
       responses:
-        '200':
+        '201':
           description: Cliente creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/ClientCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /clients/{clientId}:
+    parameters:
+      - $ref: '#/components/parameters/ClientIdPath'
+    get:
+      tags: [Clients]
+      operationId: getClient
+      summary: Obtener cliente por id
+      parameters:
+        - in: query
+          name: week_start
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Cliente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientResourceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Clients]
+      operationId: updateClient
+      summary: Actualizar cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientUpdateRequest'
+      responses:
+        '200':
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Clients]
+      operationId: deleteClient
+      summary: Eliminar cliente
+      responses:
+        '200':
+          description: Cliente eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /clients/geocode:
+    post:
+      tags: [Clients]
+      operationId: geocodeClientAddress
+      summary: Geocodificar una direccion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeocodeRequest'
+      responses:
+        '200':
+          description: Coordenadas resueltas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeocodeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /clients/geocode-all:
+    post:
+      tags: [Clients]
+      operationId: geocodeAllClients
+      summary: Geocodificar clientes pendientes
+      responses:
+        '200':
+          description: Proceso de geocodificacion completado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeocodeAllResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /clients/qr/{qrCode}:
+    parameters:
+      - in: path
+        name: qrCode
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Clients]
+      operationId: lookupClientByQr
+      summary: Buscar cliente o zona por codigo QR
+      responses:
+        '200':
+          description: Resultado del QR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJsonResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /clients/{clientId}/regenerate-qr:
+    parameters:
+      - $ref: '#/components/parameters/ClientIdPath'
+    post:
+      tags: [Clients]
+      operationId: regenerateClientQr
+      summary: Regenerar QR de un cliente
+      responses:
+        '200':
+          description: QR regenerado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QrRegeneratedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /records:
     get:
       tags: [Records]
+      operationId: listRecords
       summary: Listar fichajes
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
       responses:
         '200':
           description: Lista de fichajes
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/RecordListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags: [Records]
+      operationId: createRecord
       summary: Crear fichaje
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FreeFormObject'
+              $ref: '#/components/schemas/RecordCreateRequest'
       responses:
-        '200':
+        '201':
           description: Fichaje creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /reports:
+                $ref: '#/components/schemas/RecordCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /records/{recordId}:
+    parameters:
+      - $ref: '#/components/parameters/RecordIdPath'
     get:
-      tags: [Reports]
-      summary: Obtener reportes
+      tags: [Records]
+      operationId: getRecord
+      summary: Obtener fichaje por id
       responses:
         '200':
-          description: Reportes
+          description: Fichaje
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /work-hours:
-    get:
-      tags: [WorkHours]
-      summary: Obtener horas trabajadas
+                $ref: '#/components/schemas/RecordResourceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Records]
+      operationId: updateRecord
+      summary: Actualizar fichaje
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordUpdateRequest'
       responses:
         '200':
-          description: Horas trabajadas
+          description: Fichaje actualizado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Records]
+      operationId: deleteRecord
+      summary: Eliminar fichaje
+      responses:
+        '200':
+          description: Fichaje eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /records/{recordId}/confirm:
+    parameters:
+      - $ref: '#/components/parameters/RecordIdPath'
+    put:
+      tags: [Records]
+      operationId: confirmRecord
+      summary: Confirmar fichaje
+      responses:
+        '200':
+          description: Fichaje confirmado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      operationId: listNotifications
+      summary: Listar notificaciones del usuario autenticado
+      parameters:
+        - in: query
+          name: unreadOnly
+          schema:
+            type: boolean
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Notificaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/read-all:
+    put:
+      tags: [Notifications]
+      operationId: readAllNotifications
+      summary: Marcar todas las notificaciones como leidas
+      responses:
+        '200':
+          description: Notificaciones marcadas como leidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CountMessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/{notificationId}/read:
+    parameters:
+      - $ref: '#/components/parameters/NotificationIdPath'
+    put:
+      tags: [Notifications]
+      operationId: readNotification
+      summary: Marcar una notificacion como leida
+      responses:
+        '200':
+          description: Notificacion marcada como leida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/{notificationId}:
+    parameters:
+      - $ref: '#/components/parameters/NotificationIdPath'
+    delete:
+      tags: [Notifications]
+      operationId: deleteNotification
+      summary: Eliminar una notificacion
+      responses:
+        '200':
+          description: Notificacion eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/settings:
+    get:
+      tags: [Notifications]
+      operationId: getNotificationSettings
+      summary: Obtener configuracion de notificaciones
+      responses:
+        '200':
+          description: Configuracion de notificaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSettingsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Notifications]
+      operationId: updateNotificationSettings
+      summary: Actualizar configuracion de notificaciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettingsUpdateRequest'
+      responses:
+        '200':
+          description: Configuracion actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /breaks:
+    get:
+      tags: [Breaks]
+      operationId: listBreaks
+      summary: Listar descansos del dia
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Descansos del dia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreakListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Breaks]
+      operationId: startBreak
+      summary: Iniciar descanso
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreakCreateRequest'
+      responses:
+        '201':
+          description: Descanso iniciado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreakStartedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    put:
+      tags: [Breaks]
+      operationId: finishBreak
+      summary: Finalizar descanso en curso
+      responses:
+        '200':
+          description: Descanso finalizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreakFinishedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /vacation-requests:
     get:
       tags: [VacationRequests]
-      summary: Listar solicitudes de vacaciones
+      operationId: listVacationRequests
+      summary: Listar solicitudes de vacaciones nuevas
       responses:
         '200':
           description: Solicitudes de vacaciones
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/VacationRequestListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags: [VacationRequests]
-      summary: Crear solicitud de vacaciones
+      operationId: createVacationRequest
+      summary: Crear solicitud de vacaciones nueva
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FreeFormObject'
+              $ref: '#/components/schemas/VacationRequestCreateRequest'
       responses:
         '201':
           description: Solicitud creada
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/VacationRequestCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
   /vacation-requests/stats:
     get:
       tags: [VacationRequests]
-      summary: Obtener estadisticas de vacaciones
+      operationId: getVacationRequestStats
+      summary: Obtener estadisticas anuales de vacaciones
       parameters:
         - in: query
           name: employeeId
@@ -299,10 +944,108 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/VacationRequestStatsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /vacation-requests/{requestId}:
+    parameters:
+      - $ref: '#/components/parameters/RequestIdPath'
+    get:
+      tags: [VacationRequests]
+      operationId: getVacationRequest
+      summary: Obtener solicitud de vacaciones por id
+      responses:
+        '200':
+          description: Solicitud de vacaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationRequestResourceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [VacationRequests]
+      operationId: deleteVacationRequest
+      summary: Cancelar solicitud pendiente
+      responses:
+        '200':
+          description: Solicitud cancelada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /vacation-requests/{requestId}/approve:
+    parameters:
+      - $ref: '#/components/parameters/RequestIdPath'
+    put:
+      tags: [VacationRequests]
+      operationId: approveVacationRequest
+      summary: Aprobar solicitud de vacaciones
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VacationDecisionRequest'
+      responses:
+        '200':
+          description: Solicitud aprobada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /vacation-requests/{requestId}/reject:
+    parameters:
+      - $ref: '#/components/parameters/RequestIdPath'
+    put:
+      tags: [VacationRequests]
+      operationId: rejectVacationRequest
+      summary: Rechazar solicitud de vacaciones
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VacationDecisionRequest'
+      responses:
+        '200':
+          description: Solicitud rechazada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /vacations:
     get:
       tags: [Vacations]
+      operationId: listVacations
       summary: Listar vacaciones legacy
       responses:
         '200':
@@ -310,9 +1053,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/VacationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
     post:
       tags: [Vacations]
+      operationId: createVacation
       summary: Crear solicitud de vacaciones legacy
       requestBody:
         required: true
@@ -326,241 +1072,212 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /notifications:
+                $ref: '#/components/schemas/VacationCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /vacations/{vacationId}:
+    parameters:
+      - $ref: '#/components/parameters/VacationIdPath'
     get:
-      tags: [Notifications]
-      summary: Listar notificaciones
+      tags: [Vacations]
+      operationId: getVacation
+      summary: Obtener vacaciones legacy por id
       responses:
         '200':
-          description: Notificaciones
+          description: Vacaciones legacy
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /breaks:
-    get:
-      tags: [Breaks]
-      summary: Listar descansos
-      responses:
-        '200':
-          description: Descansos
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-    post:
-      tags: [Breaks]
-      summary: Crear descanso
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FreeFormObject'
-      responses:
-        '200':
-          description: Descanso creado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /modifications:
-    get:
-      tags: [Modifications]
-      summary: Listar solicitudes de modificacion
-      responses:
-        '200':
-          description: Modificaciones
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-    post:
-      tags: [Modifications]
-      summary: Crear solicitud de modificacion
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FreeFormObject'
-      responses:
-        '200':
-          description: Modificacion creada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /calendars:
-    get:
-      tags: [Calendars]
-      summary: Listar calendarios
-      responses:
-        '200':
-          description: Calendarios
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-    post:
-      tags: [Calendars]
-      summary: Crear calendario
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FreeFormObject'
-      responses:
-        '200':
-          description: Calendario creado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /zone-holidays:
-    get:
-      tags: [ZoneHolidays]
-      summary: Listar festivos por zona
-      parameters:
-        - in: query
-          name: zoneId
-          schema:
-            type: integer
-        - in: query
-          name: year
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Festivos por zona
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-    post:
-      tags: [ZoneHolidays]
-      summary: Crear festivo por zona
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FreeFormObject'
-      responses:
-        '200':
-          description: Festivo creado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /tolerance/zone:
-    get:
-      tags: [Tolerance]
-      summary: Obtener tolerancia de zona
-      parameters:
-        - in: query
-          name: zoneId
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Tolerancia de zona
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FreeFormResponse'
+                $ref: '#/components/schemas/VacationResourceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
-      tags: [Tolerance]
-      summary: Actualizar tolerancia de zona
+      tags: [Vacations]
+      operationId: updateVacation
+      summary: Actualizar vacaciones legacy
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FreeFormObject'
+              $ref: '#/components/schemas/VacationUpdateRequest'
       responses:
         '200':
-          description: Tolerancia actualizada
+          description: Vacaciones actualizadas
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /bolsa-anotaciones:
-    get:
-      tags: [BolsaAnotaciones]
-      summary: Listar anotaciones de bolsa
-      parameters:
-        - in: query
-          name: employeeId
-          schema:
-            type: integer
-        - in: query
-          name: month
-          schema:
-            type: string
-        - in: query
-          name: start_date
-          schema:
-            type: string
-            format: date
-        - in: query
-          name: end_date
-          schema:
-            type: string
-            format: date
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Vacations]
+      operationId: deleteVacation
+      summary: Cancelar o eliminar vacaciones legacy
       responses:
         '200':
-          description: Anotaciones de bolsa
+          description: Vacaciones eliminadas o canceladas
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-    post:
-      tags: [BolsaAnotaciones]
-      summary: Crear anotacion de bolsa
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /vacations/{vacationId}/approve:
+    parameters:
+      - $ref: '#/components/parameters/VacationIdPath'
+    put:
+      tags: [Vacations]
+      operationId: approveVacation
+      summary: Aprobar vacaciones legacy
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FreeFormObject'
+              $ref: '#/components/schemas/VacationDecisionRequest'
       responses:
         '200':
-          description: Anotacion creada
+          description: Vacaciones aprobadas
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FreeFormResponse'
-  /qr-generator:
-    get:
-      tags: [QR]
-      summary: Generar codigo QR
-      parameters:
-        - in: query
-          name: code
-          required: true
-          schema:
-            type: string
-        - in: query
-          name: size
-          schema:
-            type: integer
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /vacations/{vacationId}/reject:
+    parameters:
+      - $ref: '#/components/parameters/VacationIdPath'
+    put:
+      tags: [Vacations]
+      operationId: rejectVacation
+      summary: Rechazar vacaciones legacy
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VacationDecisionRequest'
       responses:
         '200':
-          description: Imagen PNG
+          description: Vacaciones rechazadas
           content:
-            image/png:
+            application/json:
               schema:
-                type: string
-                format: binary
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reports:
+    get:
+      tags: [Reports]
+      operationId: getReports
+      summary: Obtener reportes agregados
+      responses:
+        '200':
+          description: Reportes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJsonResponse'
+
+  /work-hours:
+    get:
+      tags: [WorkHours]
+      operationId: getWorkHours
+      summary: Obtener horas trabajadas
+      responses:
+        '200':
+          description: Horas trabajadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericJsonResponse'
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: Bearer token
+
+  parameters:
+    UserIdPath:
+      in: path
+      name: userId
+      required: true
+      schema:
+        type: integer
+    ZoneIdPath:
+      in: path
+      name: zoneId
+      required: true
+      schema:
+        type: integer
+    ClientIdPath:
+      in: path
+      name: clientId
+      required: true
+      schema:
+        type: integer
+    RecordIdPath:
+      in: path
+      name: recordId
+      required: true
+      schema:
+        type: integer
+    NotificationIdPath:
+      in: path
+      name: notificationId
+      required: true
+      schema:
+        type: integer
+    RequestIdPath:
+      in: path
+      name: requestId
+      required: true
+      schema:
+        type: integer
+    VacationIdPath:
+      in: path
+      name: vacationId
+      required: true
+      schema:
+        type: integer
+
   responses:
     Unauthorized:
       description: Token ausente, invalido o expirado
@@ -568,9 +1285,41 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: No autorizado
+    Forbidden:
+      description: Usuario autenticado sin permisos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Sin permisos
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Error funcional o de negocio
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Error de validacion
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+
   schemas:
     HealthResponse:
       type: object
+      required: [success, message]
       properties:
         success:
           type: boolean
@@ -578,52 +1327,17 @@ components:
         message:
           type: string
           example: API Laravel lista
-      required: [success, message]
-    LoginRequest:
-      type: object
-      properties:
-        username:
-          type: string
-        password:
-          type: string
-      required: [username, password]
-    LoginResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        token:
-          type: string
-        user:
-          $ref: '#/components/schemas/UserSummary'
-      required: [success, message, token, user]
-    MeResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        user:
-          $ref: '#/components/schemas/UserSummary'
-      required: [success, user]
-    MessageResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-      required: [success, message]
+
     ErrorResponse:
       type: object
+      required: [success, message]
       properties:
         success:
           type: boolean
           example: false
         message:
           type: string
-      required: [success, message]
+
     ValidationErrorResponse:
       allOf:
         - $ref: '#/components/schemas/ErrorResponse'
@@ -635,16 +1349,72 @@ components:
                 type: array
                 items:
                   type: string
+
+    MessageResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+
+    CountMessageResponse:
+      allOf:
+        - $ref: '#/components/schemas/MessageResponse'
+        - type: object
+          properties:
+            count:
+              type: integer
+
+    GenericJsonResponse:
+      type: object
+      additionalProperties: true
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      required: [success, message, token, user]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserDetails'
+
+    MeResponse:
+      type: object
+      required: [success, user]
+      properties:
+        success:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/UserDetails'
+
     CapabilitiesResponse:
       type: object
+      required: [success, capabilities]
       properties:
         success:
           type: boolean
         capabilities:
           $ref: '#/components/schemas/Capabilities'
-      required: [success, capabilities]
+
     Capabilities:
       type: object
+      required: [user, navigation, resource_access, permissions]
       properties:
         user:
           $ref: '#/components/schemas/UserSummary'
@@ -660,9 +1430,10 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/PermissionCapability'
-      required: [user, navigation, resource_access, permissions]
+
     ResourceAccess:
       type: object
+      required: [visible, manage]
       properties:
         visible:
           type: boolean
@@ -673,9 +1444,10 @@ components:
           nullable: true
           items:
             type: integer
-      required: [visible, manage, zone_scope]
+
     PermissionCapability:
       type: object
+      required: [label, allowed, scoped_zone_ids]
       properties:
         label:
           type: string
@@ -690,9 +1462,14 @@ components:
           nullable: true
           items:
             type: integer
-      required: [label, allowed, scoped_zone_ids, effective_zone_scope]
+
+    UserRole:
+      type: string
+      enum: [admin, coordinator, employee]
+
     UserSummary:
       type: object
+      required: [id, username, name, role]
       properties:
         id:
           type: integer
@@ -704,14 +1481,1159 @@ components:
           type: string
           nullable: true
         role:
-          type: string
-          enum: [admin, coordinator, employee]
+          $ref: '#/components/schemas/UserRole'
         zone_id:
           type: integer
           nullable: true
-      required: [id, username, name, role]
+
+    UserDetails:
+      allOf:
+        - $ref: '#/components/schemas/UserSummary'
+        - type: object
+          properties:
+            zone_name:
+              type: string
+              nullable: true
+            calendar_name:
+              type: string
+              nullable: true
+            phone:
+              type: string
+              nullable: true
+            dni:
+              type: string
+              nullable: true
+            active:
+              type: boolean
+            work_hours:
+              type: number
+            weekly_hours:
+              type: number
+            schedule_start:
+              type: string
+              nullable: true
+            schedule_end:
+              type: string
+              nullable: true
+            schedule_start_2:
+              type: string
+              nullable: true
+            schedule_end_2:
+              type: string
+              nullable: true
+            calendar_id:
+              type: integer
+              nullable: true
+            can_view_reports:
+              type: boolean
+            can_view_all_records:
+              type: boolean
+            can_view_all_bolsa:
+              type: boolean
+            can_view_all_dashboard:
+              type: boolean
+            can_view_user_overview:
+              type: boolean
+            can_view_coordinators_in_employee_view:
+              type: boolean
+            can_view_all_vacations:
+              type: boolean
+            can_promote_to_coordinator:
+              type: boolean
+            can_view_reports_zone_ids:
+              type: array
+              nullable: true
+              items:
+                type: integer
+            can_view_all_records_zone_ids:
+              type: array
+              nullable: true
+              items:
+                type: integer
+            can_view_all_bolsa_zone_ids:
+              type: array
+              nullable: true
+              items:
+                type: integer
+            can_view_all_dashboard_zone_ids:
+              type: array
+              nullable: true
+              items:
+                type: integer
+            can_view_user_overview_zone_ids:
+              type: array
+              nullable: true
+              items:
+                type: integer
+            can_view_coordinators_in_employee_view_zone_ids:
+              type: array
+              nullable: true
+              items:
+                type: integer
+            can_view_all_vacations_zone_ids:
+              type: array
+              nullable: true
+              items:
+                type: integer
+
+    UserCreateRequest:
+      type: object
+      required: [username, password, name, email, role]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        dni:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+        zoneId:
+          type: integer
+          nullable: true
+        work_hours:
+          type: number
+        weekly_hours:
+          type: number
+        schedule_start:
+          type: string
+          nullable: true
+        schedule_end:
+          type: string
+          nullable: true
+        schedule_start_2:
+          type: string
+          nullable: true
+        schedule_end_2:
+          type: string
+          nullable: true
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+        role:
+          $ref: '#/components/schemas/UserRole'
+        zoneId:
+          type: integer
+          nullable: true
+        password:
+          type: string
+          nullable: true
+        work_hours:
+          type: number
+        weekly_hours:
+          type: number
+        schedule_start:
+          type: string
+          nullable: true
+        schedule_end:
+          type: string
+          nullable: true
+        schedule_start_2:
+          type: string
+          nullable: true
+        schedule_end_2:
+          type: string
+          nullable: true
+        calendar_id:
+          type: integer
+          nullable: true
+        can_view_reports:
+          type: boolean
+        can_view_all_records:
+          type: boolean
+        can_view_all_bolsa:
+          type: boolean
+        can_view_all_dashboard:
+          type: boolean
+        can_view_user_overview:
+          type: boolean
+        can_view_coordinators_in_employee_view:
+          type: boolean
+        can_view_all_vacations:
+          type: boolean
+        can_promote_to_coordinator:
+          type: boolean
+        can_view_reports_zone_ids:
+          type: array
+          nullable: true
+          items:
+            type: integer
+        can_view_all_records_zone_ids:
+          type: array
+          nullable: true
+          items:
+            type: integer
+        can_view_all_bolsa_zone_ids:
+          type: array
+          nullable: true
+          items:
+            type: integer
+        can_view_all_dashboard_zone_ids:
+          type: array
+          nullable: true
+          items:
+            type: integer
+        can_view_user_overview_zone_ids:
+          type: array
+          nullable: true
+          items:
+            type: integer
+        can_view_coordinators_in_employee_view_zone_ids:
+          type: array
+          nullable: true
+          items:
+            type: integer
+        can_view_all_vacations_zone_ids:
+          type: array
+          nullable: true
+          items:
+            type: integer
+
+    UserListResponse:
+      type: object
+      required: [success, users]
+      properties:
+        success:
+          type: boolean
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserDetails'
+
+    UserResourceResponse:
+      type: object
+      required: [success, user]
+      properties:
+        success:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/UserDetails'
+
+    UserCreatedPayload:
+      type: object
+      required: [id, username]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+
+    UserCreatedResponse:
+      type: object
+      required: [success, message, user]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserCreatedPayload'
+
+    ZoneSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+          nullable: true
+        postal_code:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        province:
+          type: string
+          nullable: true
+        region_code:
+          type: string
+          nullable: true
+        qr_code:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ZoneMinimal:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ZoneCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+          nullable: true
+        postalCode:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        province:
+          type: string
+          nullable: true
+        regionCode:
+          type: string
+          nullable: true
+
+    ZoneUpdateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ZoneCreateRequest'
+
+    ZoneListResponse:
+      type: object
+      required: [success, zones]
+      properties:
+        success:
+          type: boolean
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneSummary'
+
+    ZoneMinimalListResponse:
+      type: object
+      required: [success, zones]
+      properties:
+        success:
+          type: boolean
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneMinimal'
+
+    ZoneResourceResponse:
+      type: object
+      required: [success, zone]
+      properties:
+        success:
+          type: boolean
+        zone:
+          $ref: '#/components/schemas/ZoneSummary'
+
+    ZoneCreatedPayload:
+      type: object
+      required: [id, name, qr_code]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        qr_code:
+          type: string
+
+    ZoneCreatedResponse:
+      type: object
+      required: [success, message, zone]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        zone:
+          $ref: '#/components/schemas/ZoneCreatedPayload'
+
+    QrRegeneratedResponse:
+      type: object
+      required: [success, qr_code]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          nullable: true
+        qr_code:
+          type: string
+
+    ClientSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        dni:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        postal_code:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        province:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        zone_id:
+          type: integer
+          nullable: true
+        zone_name:
+          type: string
+          nullable: true
+        qr_code:
+          type: string
+          nullable: true
+        is_office:
+          type: boolean
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ClientCreateRequest:
+      type: object
+      required: [name, address, postalCode, city, province]
+      properties:
+        name:
+          type: string
+        dni:
+          type: string
+          nullable: true
+        address:
+          type: string
+        postalCode:
+          type: string
+        city:
+          type: string
+        province:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        zoneId:
+          type: integer
+          nullable: true
+        isOffice:
+          type: boolean
+
+    ClientUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        dni:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        postalCode:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        province:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        zoneId:
+          type: integer
+          nullable: true
+        isOffice:
+          type: boolean
+        active:
+          type: boolean
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+
+    ClientListResponse:
+      type: object
+      required: [success, clients]
+      properties:
+        success:
+          type: boolean
+        clients:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientSummary'
+
+    ClientResourceResponse:
+      type: object
+      required: [success, client]
+      properties:
+        success:
+          type: boolean
+        client:
+          $ref: '#/components/schemas/ClientSummary'
+
+    ClientCreatedPayload:
+      type: object
+      required: [id, name, qr_code]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        qr_code:
+          type: string
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+
+    ClientCreatedResponse:
+      type: object
+      required: [success, message, client]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        client:
+          $ref: '#/components/schemas/ClientCreatedPayload'
+
+    GeocodeRequest:
+      type: object
+      required: [address, city]
+      properties:
+        address:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+          nullable: true
+
+    GeocodeResponse:
+      type: object
+      required: [success, latitude, longitude]
+      properties:
+        success:
+          type: boolean
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    GeocodeAllResponse:
+      type: object
+      required: [success, geocoded]
+      properties:
+        success:
+          type: boolean
+        geocoded:
+          type: integer
+
+    RecordType:
+      type: string
+      enum: [entrada, salida]
+
+    RecordSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        employee_id:
+          type: integer
+        employee_name:
+          type: string
+          nullable: true
+        type:
+          $ref: '#/components/schemas/RecordType'
+        timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        client_id:
+          type: integer
+          nullable: true
+        client_name:
+          type: string
+          nullable: true
+        zone_id:
+          type: integer
+          nullable: true
+        zone_name:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+        device:
+          type: string
+          nullable: true
+        is_teletrabajo:
+          type: boolean
+        confirmed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    RecordCreateRequest:
+      type: object
+      required: [type]
+      properties:
+        type:
+          $ref: '#/components/schemas/RecordType'
+        clientId:
+          type: integer
+          nullable: true
+        zoneId:
+          type: integer
+          nullable: true
+        qrCode:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+        device:
+          type: string
+          nullable: true
+        isTeletrabajo:
+          type: boolean
+
+    RecordUpdateRequest:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/RecordType'
+        timestamp:
+          type: string
+          format: date-time
+        clientId:
+          type: integer
+          nullable: true
+        zoneId:
+          type: integer
+          nullable: true
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+        device:
+          type: string
+          nullable: true
+        isTeletrabajo:
+          type: boolean
+        confirmed:
+          type: boolean
+
+    RecordListResponse:
+      type: object
+      required: [success, records]
+      properties:
+        success:
+          type: boolean
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordSummary'
+
+    RecordResourceResponse:
+      type: object
+      required: [success, record]
+      properties:
+        success:
+          type: boolean
+        record:
+          $ref: '#/components/schemas/RecordSummary'
+
+    RecordCreatedResponse:
+      type: object
+      required: [success, record_id, message]
+      properties:
+        success:
+          type: boolean
+        record_id:
+          type: integer
+        message:
+          type: string
+
+    NotificationItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        related_id:
+          type: integer
+          nullable: true
+        is_read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    NotificationListResponse:
+      type: object
+      required: [success, notifications, unread_count]
+      properties:
+        success:
+          type: boolean
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationItem'
+        unread_count:
+          type: integer
+
+    NotificationSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        email_address:
+          type: string
+          nullable: true
+        email_enabled:
+          type: boolean
+        push_enabled:
+          type: boolean
+        missed_checkin_enabled:
+          type: boolean
+        vacation_notifications:
+          type: boolean
+        modification_notifications:
+          type: boolean
+
+    NotificationSettingsResponse:
+      type: object
+      required: [success, settings]
+      properties:
+        success:
+          type: boolean
+        settings:
+          $ref: '#/components/schemas/NotificationSettings'
+
+    NotificationSettingsUpdateRequest:
+      type: object
+      properties:
+        emailEnabled:
+          type: boolean
+        pushEnabled:
+          type: boolean
+        missedCheckinEnabled:
+          type: boolean
+        vacationNotifications:
+          type: boolean
+        modificationNotifications:
+          type: boolean
+        emailAddress:
+          type: string
+          nullable: true
+
+    BreakType:
+      type: string
+      enum: [comida, cafe, personal]
+
+    BreakItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        record_id:
+          type: integer
+        employee_id:
+          type: integer
+        employee_name:
+          type: string
+          nullable: true
+        break_start:
+          type: string
+          format: date-time
+          nullable: true
+        break_end:
+          type: string
+          format: date-time
+          nullable: true
+        break_type:
+          $ref: '#/components/schemas/BreakType'
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        duration_minutes:
+          type: integer
+        in_progress:
+          type: boolean
+          nullable: true
+
+    BreakListResponse:
+      type: object
+      required: [success, breaks, total_minutes, total_hours]
+      properties:
+        success:
+          type: boolean
+        breaks:
+          type: array
+          items:
+            $ref: '#/components/schemas/BreakItem'
+        total_minutes:
+          type: integer
+        total_hours:
+          type: number
+        in_progress:
+          allOf:
+            - $ref: '#/components/schemas/BreakItem'
+          nullable: true
+
+    BreakCreateRequest:
+      type: object
+      properties:
+        break_type:
+          $ref: '#/components/schemas/BreakType'
+
+    BreakStartedResponse:
+      type: object
+      required: [success, message, break_id]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        break_id:
+          type: integer
+
+    BreakFinishedResponse:
+      type: object
+      required: [success, message, duration_minutes, break_type]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        duration_minutes:
+          type: integer
+        break_type:
+          $ref: '#/components/schemas/BreakType'
+
+    VacationRequestType:
+      type: string
+      enum: [vacaciones, asuntos_propios]
+
+    VacationRequestStatus:
+      type: string
+      enum: [pendiente, aprobada, rechazada]
+
+    VacationRequestItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        employee_id:
+          type: integer
+        employee_name:
+          type: string
+          nullable: true
+        employee_role:
+          type: string
+          nullable: true
+        zone_id:
+          type: integer
+          nullable: true
+        zone_name:
+          type: string
+          nullable: true
+        type:
+          $ref: '#/components/schemas/VacationRequestType'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        days_count:
+          type: integer
+        reason:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/VacationRequestStatus'
+        approved_by:
+          type: integer
+          nullable: true
+        approved_by_name:
+          type: string
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        rejection_reason:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    VacationRequestCreateRequest:
+      type: object
+      required: [type, start_date, end_date]
+      properties:
+        employee_id:
+          type: integer
+        type:
+          $ref: '#/components/schemas/VacationRequestType'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        reason:
+          type: string
+          nullable: true
+
+    VacationDecisionRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    VacationRequestListResponse:
+      type: object
+      required: [success, requests]
+      properties:
+        success:
+          type: boolean
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/VacationRequestItem'
+
+    VacationRequestResourceResponse:
+      type: object
+      required: [success, request]
+      properties:
+        success:
+          type: boolean
+        request:
+          $ref: '#/components/schemas/VacationRequestItem'
+
+    VacationRequestCreatedPayload:
+      type: object
+      required: [id, days_count]
+      properties:
+        id:
+          type: integer
+        days_count:
+          type: integer
+
+    VacationRequestCreatedResponse:
+      type: object
+      required: [success, message, request]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        request:
+          $ref: '#/components/schemas/VacationRequestCreatedPayload'
+
+    VacationRequestStatsResponse:
+      type: object
+      required: [success, year, stats, total]
+      properties:
+        success:
+          type: boolean
+        year:
+          type: string
+        stats:
+          type: object
+          properties:
+            vacaciones:
+              type: integer
+            asuntos_propios:
+              type: integer
+        total:
+          type: integer
+        base_entitlement:
+          type: integer
+        carried_over:
+          type: integer
+        total_entitled:
+          type: integer
+        consumed_from_carryover:
+          type: integer
+        consumed_from_base:
+          type: integer
+        available_vacaciones:
+          type: integer
+        ap_base:
+          type: integer
+        ap_carried_over:
+          type: integer
+        ap_total:
+          type: integer
+        ap_consumed_from_carryover:
+          type: integer
+        ap_consumed_from_base:
+          type: integer
+        ap_carried_restante:
+          type: integer
+        ap_available:
+          type: integer
+
+    VacationType:
+      type: string
+      enum: [vacation, sick_leave, permission, other]
+
+    VacationStatus:
+      type: string
+      enum: [pending, approved, rejected]
+
+    VacationItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        employee_id:
+          type: integer
+        employee_name:
+          type: string
+          nullable: true
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        type:
+          $ref: '#/components/schemas/VacationType'
+        reason:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/VacationStatus'
+        approved_by:
+          type: integer
+          nullable: true
+        approved_by_name:
+          type: string
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        days_until_start:
+          type: integer
+          nullable: true
+        total_days:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
     VacationCreateRequest:
       type: object
+      required: [startDate, endDate]
       properties:
         employeeId:
           type: integer
@@ -722,14 +2644,58 @@ components:
           type: string
           format: date
         type:
-          type: string
-          enum: [vacation, sick_leave, permission, other]
+          $ref: '#/components/schemas/VacationType'
         reason:
           type: string
-      required: [startDate, endDate]
-    FreeFormResponse:
+          nullable: true
+
+    VacationUpdateRequest:
       type: object
-      additionalProperties: true
-    FreeFormObject:
+      properties:
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        type:
+          $ref: '#/components/schemas/VacationType'
+        reason:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/VacationStatus'
+
+    VacationListResponse:
       type: object
-      additionalProperties: true
+      required: [success, vacations]
+      properties:
+        success:
+          type: boolean
+        vacations:
+          type: array
+          items:
+            $ref: '#/components/schemas/VacationItem'
+
+    VacationResourceResponse:
+      type: object
+      required: [success, vacation]
+      properties:
+        success:
+          type: boolean
+        vacation:
+          $ref: '#/components/schemas/VacationItem'
+
+    VacationCreatedResponse:
+      type: object
+      required: [success, message, vacation_id]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        vacation_id:
+          type: integer
