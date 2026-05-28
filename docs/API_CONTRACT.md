@@ -25,6 +25,7 @@ Este repositorio debe comportarse como backend puro para un frontend externo en 
 - Login: `POST /auth/login`
 - Header requerido para endpoints protegidos: `Authorization: Bearer <token>`
 - Sesion actual: `GET /auth/me`
+- Capacidades y permisos efectivos: `GET /auth/capabilities`
 - Logout: `POST /auth/logout`
 
 Respuesta de login:
@@ -199,6 +200,18 @@ Payload de alta:
 - Modelar por separado respuestas JSON y respuestas binarias como `qr-generator`.
 - Centralizar el manejo de `401` para forzar logout o refresco de sesion de cliente.
 - No acoplar el frontend al orden de listas si la API no lo garantiza explicitamente.
+
+## Capabilities para navegacion
+
+- El endpoint `GET /auth/capabilities` expone navegacion, acceso por recurso y permisos efectivos del usuario autenticado.
+- La referencia funcional esta en [docs/CAPABILITIES.md](CAPABILITIES.md).
+- React debe usar este endpoint para guards y menus en lugar de deducir reglas desde `role` o desde el frontend legacy.
+
+## OpenAPI
+
+- Especificacion base disponible en [docs/openapi.yaml](openapi.yaml).
+- Su objetivo es generar tipos y cliente HTTP en React a partir del contrato actual.
+- Es una base deliberadamente simple: cubre autenticacion, capacidades y los recursos principales con esquemas detallados o genericos segun el endpoint.
 
 ## Decision sobre Vite y Tailwind
 

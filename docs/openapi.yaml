@@ -1,0 +1,735 @@
+openapi: 3.0.3
+info:
+  title: Fichaje Backend API
+  version: 1.0.0
+  description: |
+    Contrato OpenAPI basico del backend Laravel de gestion de fichajes.
+    Esta especificacion esta pensada como base para generar tipos y cliente en React.
+    No cubre aliases .php del legacy ni el importador externo.
+servers:
+  - url: http://localhost:8000/api
+    description: Desarrollo local
+tags:
+  - name: Health
+  - name: Auth
+  - name: Users
+  - name: Zones
+  - name: Clients
+  - name: Records
+  - name: Reports
+  - name: WorkHours
+  - name: Vacations
+  - name: VacationRequests
+  - name: Notifications
+  - name: Breaks
+  - name: Modifications
+  - name: Calendars
+  - name: ZoneHolidays
+  - name: Tolerance
+  - name: BolsaAnotaciones
+  - name: QR
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      tags: [Health]
+      security: []
+      summary: Healthcheck de la API
+      responses:
+        '200':
+          description: API disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Iniciar sesion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciales invalidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validacion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Obtener usuario autenticado
+      responses:
+        '200':
+          description: Usuario autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Cerrar sesion logica del cliente
+      responses:
+        '200':
+          description: Logout correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/capabilities:
+    get:
+      tags: [Auth]
+      summary: Obtener capacidades efectivas para navegacion y guards
+      responses:
+        '200':
+          description: Capacidades del usuario autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilitiesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /users:
+    get:
+      tags: [Users]
+      summary: Listar usuarios
+      responses:
+        '200':
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [Users]
+      summary: Crear usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /zones:
+    get:
+      tags: [Zones]
+      summary: Listar zonas
+      responses:
+        '200':
+          description: Lista de zonas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [Zones]
+      summary: Crear zona
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Zona creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /zones-minimal:
+    get:
+      tags: [Zones]
+      summary: Listado reducido de zonas
+      responses:
+        '200':
+          description: Zonas reducidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /clients:
+    get:
+      tags: [Clients]
+      summary: Listar clientes
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [Clients]
+      summary: Crear cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Cliente creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /records:
+    get:
+      tags: [Records]
+      summary: Listar fichajes
+      responses:
+        '200':
+          description: Lista de fichajes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [Records]
+      summary: Crear fichaje
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Fichaje creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /reports:
+    get:
+      tags: [Reports]
+      summary: Obtener reportes
+      responses:
+        '200':
+          description: Reportes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /work-hours:
+    get:
+      tags: [WorkHours]
+      summary: Obtener horas trabajadas
+      responses:
+        '200':
+          description: Horas trabajadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /vacation-requests:
+    get:
+      tags: [VacationRequests]
+      summary: Listar solicitudes de vacaciones
+      responses:
+        '200':
+          description: Solicitudes de vacaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [VacationRequests]
+      summary: Crear solicitud de vacaciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '201':
+          description: Solicitud creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /vacation-requests/stats:
+    get:
+      tags: [VacationRequests]
+      summary: Obtener estadisticas de vacaciones
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+        - in: query
+          name: year
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Estadisticas de vacaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /vacations:
+    get:
+      tags: [Vacations]
+      summary: Listar vacaciones legacy
+      responses:
+        '200':
+          description: Vacaciones legacy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [Vacations]
+      summary: Crear solicitud de vacaciones legacy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VacationCreateRequest'
+      responses:
+        '201':
+          description: Solicitud creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Listar notificaciones
+      responses:
+        '200':
+          description: Notificaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /breaks:
+    get:
+      tags: [Breaks]
+      summary: Listar descansos
+      responses:
+        '200':
+          description: Descansos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [Breaks]
+      summary: Crear descanso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Descanso creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /modifications:
+    get:
+      tags: [Modifications]
+      summary: Listar solicitudes de modificacion
+      responses:
+        '200':
+          description: Modificaciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [Modifications]
+      summary: Crear solicitud de modificacion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Modificacion creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /calendars:
+    get:
+      tags: [Calendars]
+      summary: Listar calendarios
+      responses:
+        '200':
+          description: Calendarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [Calendars]
+      summary: Crear calendario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Calendario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /zone-holidays:
+    get:
+      tags: [ZoneHolidays]
+      summary: Listar festivos por zona
+      parameters:
+        - in: query
+          name: zoneId
+          schema:
+            type: integer
+        - in: query
+          name: year
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Festivos por zona
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [ZoneHolidays]
+      summary: Crear festivo por zona
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Festivo creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /tolerance/zone:
+    get:
+      tags: [Tolerance]
+      summary: Obtener tolerancia de zona
+      parameters:
+        - in: query
+          name: zoneId
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tolerancia de zona
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    put:
+      tags: [Tolerance]
+      summary: Actualizar tolerancia de zona
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Tolerancia actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /bolsa-anotaciones:
+    get:
+      tags: [BolsaAnotaciones]
+      summary: Listar anotaciones de bolsa
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+        - in: query
+          name: month
+          schema:
+            type: string
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Anotaciones de bolsa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+    post:
+      tags: [BolsaAnotaciones]
+      summary: Crear anotacion de bolsa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreeFormObject'
+      responses:
+        '200':
+          description: Anotacion creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeFormResponse'
+  /qr-generator:
+    get:
+      tags: [QR]
+      summary: Generar codigo QR
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: size
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Imagen PNG
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Bearer token
+  responses:
+    Unauthorized:
+      description: Token ausente, invalido o expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: API Laravel lista
+      required: [success, message]
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserSummary'
+      required: [success, message, token, user]
+    MeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/UserSummary'
+      required: [success, user]
+    MessageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required: [success, message]
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+      required: [success, message]
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+    CapabilitiesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        capabilities:
+          $ref: '#/components/schemas/Capabilities'
+      required: [success, capabilities]
+    Capabilities:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserSummary'
+        navigation:
+          type: object
+          additionalProperties:
+            type: boolean
+        resource_access:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ResourceAccess'
+        permissions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PermissionCapability'
+      required: [user, navigation, resource_access, permissions]
+    ResourceAccess:
+      type: object
+      properties:
+        visible:
+          type: boolean
+        manage:
+          type: boolean
+        zone_scope:
+          type: array
+          nullable: true
+          items:
+            type: integer
+      required: [visible, manage, zone_scope]
+    PermissionCapability:
+      type: object
+      properties:
+        label:
+          type: string
+        allowed:
+          type: boolean
+        scoped_zone_ids:
+          type: array
+          items:
+            type: integer
+        effective_zone_scope:
+          type: array
+          nullable: true
+          items:
+            type: integer
+      required: [label, allowed, scoped_zone_ids, effective_zone_scope]
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum: [admin, coordinator, employee]
+        zone_id:
+          type: integer
+          nullable: true
+      required: [id, username, name, role]
+    VacationCreateRequest:
+      type: object
+      properties:
+        employeeId:
+          type: integer
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        type:
+          type: string
+          enum: [vacation, sick_leave, permission, other]
+        reason:
+          type: string
+      required: [startDate, endDate]
+    FreeFormResponse:
+      type: object
+      additionalProperties: true
+    FreeFormObject:
+      type: object
+      additionalProperties: true

@@ -70,6 +70,23 @@ class AuthController extends Controller
         ]);
     }
 
+    public function capabilities(Request $request): JsonResponse
+    {
+        $user = $this->legacyApiAuth->resolveUserFromRequest($request);
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token no valido o expirado',
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'capabilities' => $this->legacyApiAuth->describeCapabilities($user->loadMissing(['zone:id,name', 'calendar:id,name'])),
+        ]);
+    }
+
     public function logout(Request $request): JsonResponse
     {
         if (! $this->legacyApiAuth->resolveUserFromRequest($request)) {
