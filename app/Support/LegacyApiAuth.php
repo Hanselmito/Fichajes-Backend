@@ -8,6 +8,17 @@ use JsonException;
 
 class LegacyApiAuth
 {
+    private const PERMISSION_LABELS = [
+        'can_view_reports' => 'Puede acceder a reportes fuera de su ambito minimo',
+        'can_view_all_records' => 'Puede consultar fichajes fuera de su ambito minimo',
+        'can_view_all_bolsa' => 'Puede consultar bolsa de horas fuera de su ambito minimo',
+        'can_view_all_dashboard' => 'Puede consultar dashboard fuera de su ambito minimo',
+        'can_view_user_overview' => 'Puede consultar el resumen global de empleados',
+        'can_view_coordinators_in_employee_view' => 'Puede incluir coordinadores en la vista de empleados',
+        'can_view_all_vacations' => 'Puede consultar vacaciones fuera de su ambito minimo',
+        'can_promote_to_coordinator' => 'Puede promover empleados a coordinador',
+    ];
+
     private const SCOPED_PERMISSION_MAP = [
         'can_view_reports' => 'can_view_reports_zone_ids',
         'can_view_all_records' => 'can_view_all_records_zone_ids',
@@ -116,6 +127,67 @@ class LegacyApiAuth
         return $data;
     }
 
+    public function describeCapabilities(User $user): array
+    {
+        $role = (string) $user->role;
+
+        return [
+            'user' => [
+                'id' => (int) $user->id,
+                'username' => (string) $user->username,
+                'name' => (string) $user->name,
+                'role' => $role,
+                'zone_id' => $user->zone_id !== null ? (int) $user->zone_id : null,
+            ],
+            'navigation' => [
+                'dashboard' => true,
+                'records' => true,
+                'work_hours' => true,
+                'notifications' => true,
+                'breaks' => true,
+                'modifications' => true,
+                'vacation_requests' => true,
+                'vacations' => true,
+                'reports' => $this->userHasAccess($user, 'can_view_reports'),
+                'user_overview' => $this->userHasAccess($user, 'can_view_user_overview'),
+                'zones' => in_array($role, ['admin', 'coordinator'], true),
+                'users' => in_array($role, ['admin', 'coordinator'], true),
+                'clients' => in_array($role, ['admin', 'coordinator'], true),
+                'quadrants' => in_array($role, ['admin', 'coordinator'], true),
+                'schedules' => in_array($role, ['admin', 'coordinator'], true),
+                'employee_schedules' => in_array($role, ['admin', 'coordinator'], true),
+                'services' => in_array($role, ['admin', 'coordinator'], true),
+                'calendars' => in_array($role, ['admin', 'coordinator'], true),
+                'zone_holidays' => in_array($role, ['admin', 'coordinator'], true),
+                'tolerance' => in_array($role, ['admin', 'coordinator'], true),
+                'bolsa_anotaciones' => true,
+            ],
+            'resource_access' => [
+                'users' => $this->resourceAccess(in_array($role, ['admin', 'coordinator'], true), $role === 'admin'),
+                'zones' => $this->resourceAccess(in_array($role, ['admin', 'coordinator'], true), $role === 'admin'),
+                'clients' => $this->resourceAccess(in_array($role, ['admin', 'coordinator'], true), in_array($role, ['admin', 'coordinator'], true)),
+                'records' => $this->resourceAccess(true, true, $this->getAccessibleZoneScope($user, 'can_view_all_records')),
+                'reports' => $this->resourceAccess($this->userHasAccess($user, 'can_view_reports'), false, $this->getAccessibleZoneScope($user, 'can_view_reports')),
+                'dashboard' => $this->resourceAccess(true, false, $this->getAccessibleZoneScope($user, 'can_view_all_dashboard')),
+                'bolsa_anotaciones' => $this->resourceAccess(true, true, $this->getAccessibleZoneScope($user, 'can_view_all_bolsa')),
+                'vacations' => $this->resourceAccess(true, in_array($role, ['admin', 'coordinator'], true), $this->getAccessibleZoneScope($user, 'can_view_all_vacations')),
+                'vacation_requests' => $this->resourceAccess(true, in_array($role, ['admin', 'coordinator'], true), $this->getAccessibleZoneScope($user, 'can_view_all_vacations')),
+                'quadrants' => $this->resourceAccess(in_array($role, ['admin', 'coordinator'], true), in_array($role, ['admin', 'coordinator'], true)),
+                'schedules' => $this->resourceAccess(true, in_array($role, ['admin', 'coordinator'], true)),
+                'employee_schedules' => $this->resourceAccess(in_array($role, ['admin', 'coordinator'], true), in_array($role, ['admin', 'coordinator'], true)),
+                'services' => $this->resourceAccess(in_array($role, ['admin', 'coordinator'], true), in_array($role, ['admin', 'coordinator'], true)),
+                'notifications' => $this->resourceAccess(true, true),
+                'breaks' => $this->resourceAccess(true, true),
+                'modifications' => $this->resourceAccess(true, true),
+                'calendars' => $this->resourceAccess(in_array($role, ['admin', 'coordinator'], true), in_array($role, ['admin', 'coordinator'], true)),
+                'zone_holidays' => $this->resourceAccess(in_array($role, ['admin', 'coordinator'], true), in_array($role, ['admin', 'coordinator'], true)),
+                'tolerance' => $this->resourceAccess(in_array($role, ['admin', 'coordinator'], true), in_array($role, ['admin', 'coordinator'], true)),
+                'qr_generator' => $this->resourceAccess(true, false),
+            ],
+            'permissions' => $this->permissionDetails($user),
+        ];
+    }
+
     public function userHasAccess(User $user, string $permission): bool
     {
         if ($user->role === 'admin') {
@@ -185,6 +257,31 @@ class LegacyApiAuth
         }
 
         return $this->normalizeZoneIdList($user->{$column} ?? []);
+    }
+
+    private function permissionDetails(User $user): array
+    {
+        $details = [];
+
+        foreach (self::PERMISSION_LABELS as $permission => $label) {
+            $details[$permission] = [
+                'label' => $label,
+                'allowed' => $this->userHasAccess($user, $permission),
+                'scoped_zone_ids' => $this->getScopedAccessZoneIds($user, $permission),
+                'effective_zone_scope' => $this->getAccessibleZoneScope($user, $permission),
+            ];
+        }
+
+        return $details;
+    }
+
+    private function resourceAccess(bool $visible, bool $manage, ?array $zoneScope = null): array
+    {
+        return [
+            'visible' => $visible,
+            'manage' => $manage,
+            'zone_scope' => $zoneScope,
+        ];
     }
 
     private function userSignatureSeed(User $user): string
