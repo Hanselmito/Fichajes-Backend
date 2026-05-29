@@ -96,6 +96,8 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $this->legacyApiAuth->revokeToken($request->bearerToken());
+
         return response()->json([
             'success' => true,
             'message' => 'Logout exitoso',
