@@ -12,14 +12,26 @@ servers:
 tags:
   - name: Health
   - name: Auth
+  - name: Dashboard
   - name: Users
   - name: Zones
   - name: Clients
   - name: Records
+  - name: Incidencias
   - name: Notifications
   - name: Breaks
+  - name: EmployeeSchedules
+  - name: Schedules
+  - name: Quadrants
+  - name: Services
   - name: VacationRequests
   - name: Vacations
+  - name: Modifications
+  - name: Calendars
+  - name: ZoneHolidays
+  - name: Tolerance
+  - name: BolsaAnotaciones
+  - name: QR
   - name: Reports
   - name: WorkHours
 security:
@@ -882,6 +894,759 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /dashboard:
+    get:
+      tags: [Dashboard]
+      operationId: getDashboard
+      summary: Obtener resumen operativo del dashboard
+      parameters:
+        - in: query
+          name: reportsScope
+          schema:
+            type: boolean
+        - in: query
+          name: includeCoordinators
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Resumen del dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /incidencias:
+    get:
+      tags: [Incidencias]
+      operationId: listIncidencias
+      summary: Listar incidencias
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+        - in: query
+          name: estado
+          schema:
+            $ref: '#/components/schemas/IncidenciaEstado'
+        - in: query
+          name: clientId
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Incidencias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidenciaListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Incidencias]
+      operationId: createIncidencia
+      summary: Crear incidencia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidenciaCreateRequest'
+      responses:
+        '201':
+          description: Incidencia creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidenciaCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    put:
+      tags: [Incidencias]
+      operationId: updateIncidenciaByQuery
+      summary: Actualizar incidencia indicando el id en el body
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/IncidenciaUpdateRequest'
+                - type: object
+                  required: [id]
+                  properties:
+                    id:
+                      type: integer
+      responses:
+        '200':
+          description: Incidencia actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Incidencias]
+      operationId: deleteIncidenciaByQuery
+      summary: Eliminar incidencia indicando el id por query o body
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Incidencia eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /incidencias/{incidenciaId}:
+    parameters:
+      - $ref: '#/components/parameters/IncidenciaIdPath'
+    get:
+      tags: [Incidencias]
+      operationId: getIncidencia
+      summary: Obtener incidencia por id
+      responses:
+        '200':
+          description: Incidencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidenciaResourceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Incidencias]
+      operationId: updateIncidencia
+      summary: Actualizar incidencia por id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidenciaUpdateRequest'
+      responses:
+        '200':
+          description: Incidencia actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Incidencias]
+      operationId: deleteIncidencia
+      summary: Eliminar incidencia por id
+      responses:
+        '200':
+          description: Incidencia eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /employee-schedules:
+    get:
+      tags: [EmployeeSchedules]
+      operationId: listEmployeeSchedules
+      summary: Obtener horario historificado vigente de un empleado
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Horario vigente del empleado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeScheduleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [EmployeeSchedules]
+      operationId: saveEmployeeSchedules
+      summary: Guardar una nueva version de horario para un empleado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeScheduleVersionRequest'
+      responses:
+        '200':
+          description: Horario configurado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /employee-schedules/{employeeScheduleId}:
+    parameters:
+      - $ref: '#/components/parameters/EmployeeScheduleIdPath'
+    put:
+      tags: [EmployeeSchedules]
+      operationId: updateEmployeeSchedules
+      summary: Actualizar horario historificado de un empleado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeScheduleVersionRequest'
+      responses:
+        '200':
+          description: Horario configurado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /schedules:
+    get:
+      tags: [Schedules]
+      operationId: listSchedules
+      summary: Obtener horario actual de un empleado mediante la tabla vigente
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Horario actual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentScheduleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Schedules]
+      operationId: saveCurrentSchedules
+      summary: Reemplazar horario actual de un empleado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CurrentScheduleStoreRequest'
+      responses:
+        '200':
+          description: Horario configurado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /schedules/{employeeId}:
+    parameters:
+      - $ref: '#/components/parameters/EmployeeIdPath'
+    get:
+      tags: [Schedules]
+      operationId: getCurrentScheduleByEmployee
+      summary: Obtener horario actual de un empleado por id
+      responses:
+        '200':
+          description: Horario actual del empleado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentScheduleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /schedules/status/today:
+    get:
+      tags: [Schedules]
+      operationId: getTodayScheduleStatuses
+      summary: Obtener presencia prevista y ultimo fichaje de hoy
+      responses:
+        '200':
+          description: Estado diario de presencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleTodayStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /quadrants:
+    get:
+      tags: [Quadrants]
+      operationId: listQuadrants
+      summary: Listar cuadrantes o resolver vistas derivadas de cuadrante
+      parameters:
+        - in: query
+          name: week_start
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: zone_id
+          schema:
+            type: integer
+        - in: query
+          name: availability
+          schema:
+            type: boolean
+        - in: query
+          name: client_id
+          schema:
+            type: integer
+        - in: query
+          name: employee
+          schema:
+            type: boolean
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+        - in: query
+          name: day_of_week
+          schema:
+            type: integer
+        - in: query
+          name: start_time
+          schema:
+            type: string
+        - in: query
+          name: end_time
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cuadrantes, asignaciones o disponibilidad segun el filtro
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/QuadrantListResponse'
+                  - $ref: '#/components/schemas/QuadrantWeekAssignmentsResponse'
+                  - $ref: '#/components/schemas/QuadrantClientAssignmentsResponse'
+                  - $ref: '#/components/schemas/QuadrantAvailabilityResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Quadrants]
+      operationId: createQuadrant
+      summary: Crear cuadrante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuadrantCreateRequest'
+      responses:
+        '201':
+          description: Cuadrante creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdMessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /quadrants/{quadrantId}:
+    parameters:
+      - $ref: '#/components/parameters/QuadrantIdPath'
+    get:
+      tags: [Quadrants]
+      operationId: getQuadrant
+      summary: Obtener un cuadrante con sus asignaciones
+      responses:
+        '200':
+          description: Cuadrante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuadrantResourceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Quadrants]
+      operationId: updateQuadrant
+      summary: Actualizar cuadrante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuadrantUpdateRequest'
+      responses:
+        '200':
+          description: Cuadrante actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Quadrants]
+      operationId: deleteQuadrant
+      summary: Eliminar cuadrante
+      responses:
+        '200':
+          description: Cuadrante eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /quadrants/{quadrantId}/assignments:
+    parameters:
+      - $ref: '#/components/parameters/QuadrantIdPath'
+    get:
+      tags: [Quadrants]
+      operationId: listQuadrantAssignments
+      summary: Listar asignaciones de un cuadrante
+      responses:
+        '200':
+          description: Asignaciones del cuadrante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuadrantAssignmentsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Quadrants]
+      operationId: createQuadrantAssignment
+      summary: Crear asignacion en un cuadrante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuadrantAssignmentCreateRequest'
+      responses:
+        '201':
+          description: Asignacion creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdMessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /quadrants/{quadrantId}/assignments/{assignmentId}:
+    parameters:
+      - $ref: '#/components/parameters/QuadrantIdPath'
+      - $ref: '#/components/parameters/AssignmentIdPath'
+    put:
+      tags: [Quadrants]
+      operationId: updateQuadrantAssignment
+      summary: Actualizar asignacion de cuadrante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuadrantAssignmentUpdateRequest'
+      responses:
+        '200':
+          description: Asignacion actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Quadrants]
+      operationId: deleteQuadrantAssignment
+      summary: Eliminar asignacion de cuadrante
+      responses:
+        '200':
+          description: Asignacion eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /quadrants/{quadrantId}/assignments/{assignmentId}/exceptions:
+    parameters:
+      - $ref: '#/components/parameters/QuadrantIdPath'
+      - $ref: '#/components/parameters/AssignmentIdPath'
+    get:
+      tags: [Quadrants]
+      operationId: listQuadrantExceptions
+      summary: Listar excepciones de una asignacion
+      responses:
+        '200':
+          description: Excepciones de la asignacion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuadrantExceptionsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Quadrants]
+      operationId: createQuadrantException
+      summary: Crear excepcion en una asignacion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuadrantExceptionCreateRequest'
+      responses:
+        '201':
+          description: Excepcion creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdMessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /quadrants/{quadrantId}/assignments/{assignmentId}/exceptions/{exceptionId}:
+    parameters:
+      - $ref: '#/components/parameters/QuadrantIdPath'
+      - $ref: '#/components/parameters/AssignmentIdPath'
+      - $ref: '#/components/parameters/ExceptionIdPath'
+    delete:
+      tags: [Quadrants]
+      operationId: deleteQuadrantException
+      summary: Eliminar excepcion de una asignacion
+      responses:
+        '200':
+          description: Excepcion eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /services:
+    get:
+      tags: [Services]
+      operationId: listServices
+      summary: Listar servicios
+      parameters:
+        - in: query
+          name: active
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Servicios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Services]
+      operationId: createService
+      summary: Crear servicio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceCreateRequest'
+      responses:
+        '201':
+          description: Servicio creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /services/{serviceId}:
+    parameters:
+      - $ref: '#/components/parameters/ServiceIdPath'
+    put:
+      tags: [Services]
+      operationId: updateService
+      summary: Actualizar servicio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceUpdateRequest'
+      responses:
+        '200':
+          description: Servicio actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Services]
+      operationId: deleteService
+      summary: Desactivar servicio
+      responses:
+        '200':
+          description: Servicio desactivado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /vacation-requests:
     get:
       tags: [VacationRequests]
@@ -1201,31 +1966,948 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /modifications:
+    get:
+      tags: [Modifications]
+      operationId: listModificationRequests
+      summary: Listar solicitudes de modificacion
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/ModificationRequestStatus'
+      responses:
+        '200':
+          description: Solicitudes de modificacion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModificationRequestListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Modifications]
+      operationId: createModificationRequest
+      summary: Crear solicitud de modificacion del propio empleado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModificationRequestCreateRequest'
+      responses:
+        '201':
+          description: Solicitud creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModificationRequestCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /modifications/requests:
+    get:
+      tags: [Modifications]
+      operationId: listModificationRequestsAlias
+      summary: Alias legacy para listar solicitudes de modificacion
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/ModificationRequestStatus'
+      responses:
+        '200':
+          description: Solicitudes de modificacion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModificationRequestListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Modifications]
+      operationId: createModificationRequestAlias
+      summary: Alias legacy para crear solicitud de modificacion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModificationRequestCreateRequest'
+      responses:
+        '201':
+          description: Solicitud creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModificationRequestCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /modifications/requests/{modificationRequestId}/approve:
+    parameters:
+      - $ref: '#/components/parameters/ModificationRequestIdPath'
+    put:
+      tags: [Modifications]
+      operationId: approveModificationRequest
+      summary: Aprobar solicitud de modificacion
+      responses:
+        '200':
+          description: Solicitud aprobada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /modifications/requests/{modificationRequestId}/reject:
+    parameters:
+      - $ref: '#/components/parameters/ModificationRequestIdPath'
+    put:
+      tags: [Modifications]
+      operationId: rejectModificationRequest
+      summary: Rechazar solicitud de modificacion
+      responses:
+        '200':
+          description: Solicitud rechazada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /modifications/confirmations:
+    get:
+      tags: [Modifications]
+      operationId: listModificationConfirmations
+      summary: Listar propuestas de modificacion pendientes de confirmar por el empleado
+      responses:
+        '200':
+          description: Propuestas de modificacion
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModificationConfirmationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Modifications]
+      operationId: createModificationConfirmation
+      summary: Proponer un cambio de fichaje a un empleado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModificationConfirmationCreateRequest'
+      responses:
+        '201':
+          description: Propuesta enviada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModificationConfirmationCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /modifications/confirmations/{confirmationId}/confirm:
+    parameters:
+      - $ref: '#/components/parameters/ConfirmationIdPath'
+    put:
+      tags: [Modifications]
+      operationId: confirmModificationConfirmation
+      summary: Confirmar propuesta de modificacion
+      responses:
+        '200':
+          description: Propuesta confirmada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /modifications/confirmations/{confirmationId}/reject:
+    parameters:
+      - $ref: '#/components/parameters/ConfirmationIdPath'
+    put:
+      tags: [Modifications]
+      operationId: rejectModificationConfirmation
+      summary: Rechazar propuesta de modificacion
+      responses:
+        '200':
+          description: Propuesta rechazada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /calendars:
+    get:
+      tags: [Calendars]
+      operationId: listCalendars
+      summary: Listar calendarios
+      responses:
+        '200':
+          description: Calendarios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Calendars]
+      operationId: createCalendar
+      summary: Crear calendario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarCreateRequest'
+      responses:
+        '201':
+          description: Calendario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /calendars/{calendarId}:
+    parameters:
+      - $ref: '#/components/parameters/CalendarIdPath'
+    put:
+      tags: [Calendars]
+      operationId: updateCalendar
+      summary: Actualizar calendario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarUpdateRequest'
+      responses:
+        '200':
+          description: Calendario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Calendars]
+      operationId: deleteCalendar
+      summary: Eliminar calendario
+      responses:
+        '200':
+          description: Calendario eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /calendars/{calendarId}/holidays:
+    parameters:
+      - $ref: '#/components/parameters/CalendarIdPath'
+    get:
+      tags: [Calendars]
+      operationId: listCalendarHolidays
+      summary: Listar festivos de un calendario
+      parameters:
+        - in: query
+          name: year
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Festivos del calendario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarHolidayListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Calendars]
+      operationId: createCalendarHoliday
+      summary: Añadir o importar festivos de un calendario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/CalendarHolidayCreateRequest'
+                - $ref: '#/components/schemas/CalendarHolidayImportRequest'
+      responses:
+        '200':
+          description: Importacion de festivos completada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarHolidayImportResponse'
+        '201':
+          description: Festivo añadido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarHolidayCreatedResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /calendars/{calendarId}/holidays/{holidayId}:
+    parameters:
+      - $ref: '#/components/parameters/CalendarIdPath'
+      - $ref: '#/components/parameters/HolidayIdPath'
+    delete:
+      tags: [Calendars]
+      operationId: deleteCalendarHoliday
+      summary: Eliminar festivo de un calendario
+      responses:
+        '200':
+          description: Festivo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /zone-holidays:
+    get:
+      tags: [ZoneHolidays]
+      operationId: listZoneHolidays
+      summary: Listar festivos nacionales o por zona
+      parameters:
+        - in: query
+          name: zoneId
+          schema:
+            type: integer
+            nullable: true
+        - in: query
+          name: year
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Festivos de zona
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneHolidayListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [ZoneHolidays]
+      operationId: createZoneHoliday
+      summary: Crear o importar festivos de zona
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/ZoneHolidayCreateRequest'
+                - $ref: '#/components/schemas/ZoneHolidayImportRequest'
+      responses:
+        '200':
+          description: Importacion completada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneHolidayImportResponse'
+        '201':
+          description: Festivo creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneHolidayCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [ZoneHolidays]
+      operationId: deleteZoneHolidayByQuery
+      summary: Eliminar festivo de zona indicando el id por query o body
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Festivo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /zone-holidays/{zoneHolidayId}:
+    parameters:
+      - $ref: '#/components/parameters/ZoneHolidayIdPath'
+    delete:
+      tags: [ZoneHolidays]
+      operationId: deleteZoneHoliday
+      summary: Eliminar festivo de zona por path
+      responses:
+        '200':
+          description: Festivo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /tolerance:
+    get:
+      tags: [Tolerance]
+      operationId: getZoneTolerance
+      summary: Obtener configuracion de tolerancia por zona
+      parameters:
+        - in: query
+          name: zoneId
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Configuracion de tolerancia de zona
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneToleranceSettingsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags: [Tolerance]
+      operationId: updateZoneTolerance
+      summary: Actualizar configuracion de tolerancia por zona
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneToleranceUpdateRequest'
+      responses:
+        '200':
+          description: Configuracion actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /tolerance/zone:
+    get:
+      tags: [Tolerance]
+      operationId: getZoneToleranceAlias
+      summary: Alias legacy de tolerancia por zona
+      parameters:
+        - in: query
+          name: zoneId
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Configuracion de tolerancia de zona
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZoneToleranceSettingsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags: [Tolerance]
+      operationId: updateZoneToleranceAlias
+      summary: Alias legacy para actualizar tolerancia por zona
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneToleranceUpdateRequest'
+      responses:
+        '200':
+          description: Configuracion actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /tolerance/employee/{employeeId}:
+    parameters:
+      - $ref: '#/components/parameters/EmployeeIdPath'
+    get:
+      tags: [Tolerance]
+      operationId: getEmployeeTolerance
+      summary: Obtener tolerancias por dia para un empleado
+      responses:
+        '200':
+          description: Horarios con tolerancias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeToleranceSchedulesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Tolerance]
+      operationId: updateEmployeeToleranceDay
+      summary: Actualizar tolerancias de un dia de un empleado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeToleranceDayUpdateRequest'
+      responses:
+        '200':
+          description: Tolerancia actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tolerance/employee/{employeeId}/all:
+    parameters:
+      - $ref: '#/components/parameters/EmployeeIdPath'
+    put:
+      tags: [Tolerance]
+      operationId: updateEmployeeToleranceAll
+      summary: Actualizar tolerancias para todos los dias de un empleado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeToleranceBulkUpdateRequest'
+      responses:
+        '200':
+          description: Tolerancia actualizada para todos los dias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tolerance/presets:
+    get:
+      tags: [Tolerance]
+      operationId: listTolerancePresets
+      summary: Listar presets de tolerancia
+      responses:
+        '200':
+          description: Presets de tolerancia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TolerancePresetsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /bolsa-anotaciones:
+    get:
+      tags: [BolsaAnotaciones]
+      operationId: listBolsaAnotaciones
+      summary: Listar anotaciones de bolsa de horas
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+        - in: query
+          name: month
+          schema:
+            type: string
+            example: 2026-05
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Anotaciones de bolsa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BolsaAnotacionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [BolsaAnotaciones]
+      operationId: createBolsaAnotacion
+      summary: Crear anotacion de bolsa de horas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BolsaAnotacionCreateRequest'
+      responses:
+        '201':
+          description: Anotacion creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BolsaAnotacionCreatedResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /bolsa-anotaciones/{anotacionId}:
+    parameters:
+      - $ref: '#/components/parameters/AnotacionIdPath'
+    put:
+      tags: [BolsaAnotaciones]
+      operationId: updateBolsaAnotacion
+      summary: Actualizar anotacion de bolsa de horas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BolsaAnotacionUpdateRequest'
+      responses:
+        '200':
+          description: Anotacion actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [BolsaAnotaciones]
+      operationId: deleteBolsaAnotacion
+      summary: Eliminar anotacion de bolsa de horas
+      responses:
+        '200':
+          description: Anotacion eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /qr-generator:
+    get:
+      tags: [QR]
+      operationId: generateQrGet
+      summary: Generar imagen PNG de un codigo QR
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: size
+          schema:
+            type: integer
+            minimum: 100
+            maximum: 500
+      responses:
+        '200':
+          description: Imagen PNG del QR
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Codigo vacio
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: No se pudo generar el QR
+          content:
+            text/plain:
+              schema:
+                type: string
+    post:
+      tags: [QR]
+      operationId: generateQrPost
+      summary: Generar imagen PNG de un codigo QR por POST
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QrGeneratorRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QrGeneratorRequest'
+      responses:
+        '200':
+          description: Imagen PNG del QR
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Codigo vacio
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: No se pudo generar el QR
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /reports:
     get:
       tags: [Reports]
       operationId: getReports
       summary: Obtener reportes agregados
+      parameters:
+        - in: query
+          name: format
+          schema:
+            $ref: '#/components/schemas/ReportMode'
       responses:
         '200':
-          description: Reportes
+          description: Reporte en formato estadistico, JSON, CSV o texto
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericJsonResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/ReportStatsResponse'
+                  - $ref: '#/components/schemas/ReportJsonResponse'
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+
+  /reports/{mode}:
+    parameters:
+      - in: path
+        name: mode
+        required: true
+        schema:
+          $ref: '#/components/schemas/ReportMode'
+    get:
+      tags: [Reports]
+      operationId: getReportsByMode
+      summary: Obtener reportes por modo explicito
+      responses:
+        '200':
+          description: Reporte en formato solicitado
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ReportStatsResponse'
+                  - $ref: '#/components/schemas/ReportJsonResponse'
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            text/plain:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /work-hours:
     get:
       tags: [WorkHours]
       operationId: getWorkHours
       summary: Obtener horas trabajadas
+      parameters:
+        - in: query
+          name: today
+          schema:
+            type: boolean
+        - in: query
+          name: balance
+          schema:
+            type: boolean
+        - in: query
+          name: employeeId
+          schema:
+            type: integer
+        - in: query
+          name: month
+          schema:
+            type: string
+            example: 2026-05
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
       responses:
         '200':
-          description: Horas trabajadas
+          description: Resumen de horas de hoy o balance de horas
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GenericJsonResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/WorkHoursTodayResponse'
+                  - $ref: '#/components/schemas/WorkHoursBalanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
 components:
   securitySchemes:
@@ -1274,6 +2956,84 @@ components:
     VacationIdPath:
       in: path
       name: vacationId
+      required: true
+      schema:
+        type: integer
+    EmployeeIdPath:
+      in: path
+      name: employeeId
+      required: true
+      schema:
+        type: integer
+    CalendarIdPath:
+      in: path
+      name: calendarId
+      required: true
+      schema:
+        type: integer
+    HolidayIdPath:
+      in: path
+      name: holidayId
+      required: true
+      schema:
+        type: integer
+    ModificationRequestIdPath:
+      in: path
+      name: modificationRequestId
+      required: true
+      schema:
+        type: integer
+    ConfirmationIdPath:
+      in: path
+      name: confirmationId
+      required: true
+      schema:
+        type: integer
+    ZoneHolidayIdPath:
+      in: path
+      name: zoneHolidayId
+      required: true
+      schema:
+        type: integer
+    AnotacionIdPath:
+      in: path
+      name: anotacionId
+      required: true
+      schema:
+        type: integer
+    IncidenciaIdPath:
+      in: path
+      name: incidenciaId
+      required: true
+      schema:
+        type: integer
+    EmployeeScheduleIdPath:
+      in: path
+      name: employeeScheduleId
+      required: true
+      schema:
+        type: integer
+    QuadrantIdPath:
+      in: path
+      name: quadrantId
+      required: true
+      schema:
+        type: integer
+    AssignmentIdPath:
+      in: path
+      name: assignmentId
+      required: true
+      schema:
+        type: integer
+    ExceptionIdPath:
+      in: path
+      name: exceptionId
+      required: true
+      schema:
+        type: integer
+    ServiceIdPath:
+      in: path
+      name: serviceId
       required: true
       schema:
         type: integer
@@ -1368,9 +3128,1796 @@ components:
             count:
               type: integer
 
+    IdMessageResponse:
+      allOf:
+        - $ref: '#/components/schemas/MessageResponse'
+        - type: object
+          required: [id]
+          properties:
+            id:
+              type: integer
+
     GenericJsonResponse:
       type: object
       additionalProperties: true
+
+    ReportMode:
+      type: string
+      enum: [stats, json, csv, text]
+
+    DashboardStatusKey:
+      type: string
+      enum: [inactive, sick_leave, asuntos_propios, vacaciones, active, pending, away]
+
+    DashboardStatusTone:
+      type: string
+      enum: [muted, danger, warning, info, success]
+
+    DashboardNextAssignment:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        start_time:
+          type: string
+        end_time:
+          type: string
+        client_id:
+          type: integer
+          nullable: true
+        client_name:
+          type: string
+          nullable: true
+        same_client:
+          type: boolean
+
+    DashboardEmployee:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/UserRole'
+        zone_id:
+          type: integer
+          nullable: true
+        zone_name:
+          type: string
+          nullable: true
+        active:
+          type: integer
+        work_hours:
+          type: number
+        weekly_hours:
+          type: number
+        schedule_start:
+          type: string
+          nullable: true
+        schedule_end:
+          type: string
+          nullable: true
+        schedule_start_2:
+          type: string
+          nullable: true
+        schedule_end_2:
+          type: string
+          nullable: true
+        within_schedule:
+          type: boolean
+        status:
+          type: string
+          enum: [trabajando, ausente, vacaciones]
+        status_display_key:
+          $ref: '#/components/schemas/DashboardStatusKey'
+        status_display_label:
+          type: string
+        status_display_tone:
+          $ref: '#/components/schemas/DashboardStatusTone'
+        last_action:
+          type: string
+          nullable: true
+        last_action_time:
+          type: string
+          format: date-time
+          nullable: true
+        hours_worked_week:
+          type: number
+        percentage:
+          type: number
+        vacation_type:
+          type: string
+          nullable: true
+        current_client_name:
+          type: string
+          nullable: true
+        current_client_time:
+          type: string
+          format: date-time
+          nullable: true
+        next_assignment:
+          allOf:
+            - $ref: '#/components/schemas/DashboardNextAssignment'
+          nullable: true
+
+    DashboardCheckinsHistoryItem:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        label:
+          type: string
+        total:
+          type: integer
+        pending:
+          type: integer
+
+    DashboardCheckinsSummary:
+      type: object
+      properties:
+        today:
+          type: object
+          properties:
+            date:
+              type: string
+              format: date
+            total:
+              type: integer
+            pending:
+              type: integer
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardCheckinsHistoryItem'
+
+    DashboardResponse:
+      type: object
+      required: [success, employees, total, trabajando, ausente, vacaciones, checkins_summary]
+      properties:
+        success:
+          type: boolean
+        employees:
+          type: array
+          items:
+            $ref: '#/components/schemas/DashboardEmployee'
+        total:
+          type: integer
+        trabajando:
+          type: integer
+        ausente:
+          type: integer
+        vacaciones:
+          type: integer
+        checkins_summary:
+          $ref: '#/components/schemas/DashboardCheckinsSummary'
+
+    IncidenciaTipo:
+      type: string
+      enum: [cliente, desplazamiento, material, salud, otro]
+
+    IncidenciaPrioridad:
+      type: string
+      enum: [baja, media, alta, urgente]
+
+    IncidenciaEstado:
+      type: string
+      enum: [pendiente, en_revision, resuelto, cerrado]
+
+    IncidenciaItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        employee_id:
+          type: integer
+        employee_name:
+          type: string
+          nullable: true
+        client_id:
+          type: integer
+          nullable: true
+        client_name:
+          type: string
+          nullable: true
+        zone_id:
+          type: integer
+          nullable: true
+        zone_name:
+          type: string
+          nullable: true
+        record_id:
+          type: integer
+          nullable: true
+        tipo:
+          $ref: '#/components/schemas/IncidenciaTipo'
+        prioridad:
+          $ref: '#/components/schemas/IncidenciaPrioridad'
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        estado:
+          $ref: '#/components/schemas/IncidenciaEstado'
+        respuesta:
+          type: string
+          nullable: true
+        coordinador_id:
+          type: integer
+          nullable: true
+        coordinador_name:
+          type: string
+          nullable: true
+        resuelto_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    IncidenciaListResponse:
+      type: object
+      required: [success, incidencias]
+      properties:
+        success:
+          type: boolean
+        incidencias:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidenciaItem'
+
+    IncidenciaResourceResponse:
+      type: object
+      required: [success, incidencia]
+      properties:
+        success:
+          type: boolean
+        incidencia:
+          $ref: '#/components/schemas/IncidenciaItem'
+
+    IncidenciaCreateRequest:
+      type: object
+      required: [titulo, descripcion]
+      properties:
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        clientId:
+          type: integer
+          nullable: true
+        zoneId:
+          type: integer
+          nullable: true
+        recordId:
+          type: integer
+          nullable: true
+        tipo:
+          $ref: '#/components/schemas/IncidenciaTipo'
+        prioridad:
+          $ref: '#/components/schemas/IncidenciaPrioridad'
+        coordinadorId:
+          type: integer
+          nullable: true
+
+    IncidenciaUpdateRequest:
+      type: object
+      properties:
+        estado:
+          $ref: '#/components/schemas/IncidenciaEstado'
+        respuesta:
+          type: string
+          nullable: true
+        coordinadorId:
+          type: integer
+          nullable: true
+
+    IncidenciaCreatedResponse:
+      type: object
+      required: [success, incidencia_id, message]
+      properties:
+        success:
+          type: boolean
+        incidencia_id:
+          type: integer
+        message:
+          type: string
+
+    EmployeeScheduleSegment:
+      type: object
+      properties:
+        start_time:
+          type: string
+        end_time:
+          type: string
+
+    EmployeeScheduleVersionDay:
+      type: object
+      properties:
+        day_of_week:
+          type: string
+        is_workday:
+          type: integer
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmployeeScheduleSegment'
+
+    EmployeeScheduleVersionRequest:
+      type: object
+      required: [employeeId, schedules]
+      properties:
+        employeeId:
+          type: integer
+        effective_date:
+          type: string
+          format: date
+        weekly_hours:
+          type: number
+        schedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmployeeScheduleVersionDay'
+
+    EmployeeScheduleItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          nullable: true
+        employee_id:
+          type: integer
+        day_of_week:
+          type: string
+        is_workday:
+          type: integer
+        shift_start_1:
+          type: string
+          nullable: true
+        shift_end_1:
+          type: string
+          nullable: true
+        shift_start_2:
+          type: string
+          nullable: true
+        shift_end_2:
+          type: string
+          nullable: true
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmployeeScheduleSegment'
+        daily_hours:
+          type: number
+
+    EmployeeScheduleListResponse:
+      type: object
+      required: [success, schedules]
+      properties:
+        success:
+          type: boolean
+        schedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmployeeScheduleItem'
+
+    CurrentScheduleItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        employee_id:
+          type: integer
+        day_of_week:
+          type: integer
+        start_time:
+          type: string
+          nullable: true
+        end_time:
+          type: string
+          nullable: true
+        is_working_day:
+          type: boolean
+        entry_tolerance_minutes:
+          type: integer
+          nullable: true
+        exit_tolerance_minutes:
+          type: integer
+          nullable: true
+        daily_hours:
+          type: number
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CurrentScheduleResponse:
+      type: object
+      required: [success, schedules]
+      properties:
+        success:
+          type: boolean
+        schedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CurrentScheduleItem'
+
+    CurrentScheduleStoreDay:
+      type: object
+      required: [dayOfWeek, isWorkingDay]
+      properties:
+        dayOfWeek:
+          type: integer
+        startTime:
+          type: string
+          nullable: true
+        endTime:
+          type: string
+          nullable: true
+        isWorkingDay:
+          type: boolean
+        toleranceMinutes:
+          type: integer
+          nullable: true
+
+    CurrentScheduleStoreRequest:
+      type: object
+      required: [employeeId, schedules]
+      properties:
+        employeeId:
+          type: integer
+        schedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/CurrentScheduleStoreDay'
+
+    ScheduleTodayStatusItem:
+      type: object
+      properties:
+        employee_id:
+          type: integer
+        employee_name:
+          type: string
+        zone_id:
+          type: integer
+          nullable: true
+        zone_name:
+          type: string
+          nullable: true
+        day_of_week:
+          type: integer
+        is_working_day:
+          type: boolean
+        start_time:
+          type: string
+          nullable: true
+        end_time:
+          type: string
+          nullable: true
+        tolerance_minutes:
+          type: integer
+          nullable: true
+        last_record_type:
+          type: string
+          nullable: true
+        last_record_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ScheduleTodayStatusResponse:
+      type: object
+      required: [success, statuses]
+      properties:
+        success:
+          type: boolean
+        statuses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleTodayStatusItem'
+
+    ServiceItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        duration_minutes:
+          type: integer
+        color:
+          type: string
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ServiceListResponse:
+      type: object
+      required: [success, services]
+      properties:
+        success:
+          type: boolean
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceItem'
+
+    ServiceCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        duration_minutes:
+          type: integer
+        color:
+          type: string
+
+    ServiceUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        duration_minutes:
+          type: integer
+        color:
+          type: string
+        active:
+          type: boolean
+
+    ServiceCreatedResponse:
+      type: object
+      required: [success, message, id, service]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        id:
+          type: integer
+        service:
+          $ref: '#/components/schemas/ServiceItem'
+
+    QuadrantItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        zone_id:
+          type: integer
+        zone_name:
+          type: string
+          nullable: true
+        week_start:
+          type: string
+          format: date
+        is_template:
+          type: boolean
+        created_by:
+          type: integer
+          nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+        total_assignments:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    QuadrantListResponse:
+      type: object
+      required: [success, quadrants]
+      properties:
+        success:
+          type: boolean
+        quadrants:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuadrantItem'
+
+    QuadrantCreateRequest:
+      type: object
+      required: [name, week_start]
+      properties:
+        name:
+          type: string
+        week_start:
+          type: string
+          format: date
+        zone_id:
+          type: integer
+          nullable: true
+        is_template:
+          type: boolean
+
+    QuadrantUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        week_start:
+          type: string
+          format: date
+        is_template:
+          type: boolean
+
+    QuadrantAssignmentItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        schedule_id:
+          type: integer
+        employee_id:
+          type: integer
+        employee_name:
+          type: string
+          nullable: true
+        client_id:
+          type: integer
+          nullable: true
+        client_name:
+          type: string
+          nullable: true
+        client_address:
+          type: string
+          nullable: true
+        client_city:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+        day_of_week:
+          type: integer
+        start_time:
+          type: string
+        end_time:
+          type: string
+        date:
+          type: string
+          format: date
+          nullable: true
+        services:
+          type: array
+          nullable: true
+          items:
+            type: integer
+        service_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceItem'
+        services_duration_minutes:
+          type: integer
+        client_service_ids:
+          type: array
+          items:
+            type: integer
+        missing_client_service_ids:
+          type: array
+          items:
+            type: integer
+        service_coverage_complete:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        exception:
+          allOf:
+            - $ref: '#/components/schemas/QuadrantExceptionItem'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    QuadrantAssignmentsResponse:
+      type: object
+      required: [success, assignments]
+      properties:
+        success:
+          type: boolean
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuadrantAssignmentItem'
+
+    QuadrantResourceResponse:
+      type: object
+      required: [success, quadrant]
+      properties:
+        success:
+          type: boolean
+        quadrant:
+          allOf:
+            - $ref: '#/components/schemas/QuadrantItem'
+            - type: object
+              properties:
+                assignments:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/QuadrantAssignmentItem'
+
+    QuadrantAssignmentCreateRequest:
+      type: object
+      required: [employee_id, client_id, day_of_week, start_time, end_time]
+      properties:
+        employee_id:
+          type: integer
+        client_id:
+          type: integer
+        day_of_week:
+          type: integer
+        start_time:
+          type: string
+        end_time:
+          type: string
+        services:
+          type: array
+          items:
+            type: integer
+        notes:
+          type: string
+          nullable: true
+
+    QuadrantAssignmentUpdateRequest:
+      type: object
+      properties:
+        employee_id:
+          type: integer
+        client_id:
+          type: integer
+        day_of_week:
+          type: integer
+        start_time:
+          type: string
+        end_time:
+          type: string
+        services:
+          type: array
+          nullable: true
+          items:
+            type: integer
+        notes:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+
+    QuadrantExceptionType:
+      type: string
+      enum: [modified, cancelled, substitution]
+
+    QuadrantExceptionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        assignment_id:
+          type: integer
+        exception_date:
+          type: string
+          format: date
+        type:
+          $ref: '#/components/schemas/QuadrantExceptionType'
+        substitute_employee_id:
+          type: integer
+          nullable: true
+        substitute_name:
+          type: string
+          nullable: true
+        new_start_time:
+          type: string
+          nullable: true
+        new_end_time:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        created_by:
+          type: integer
+          nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    QuadrantExceptionsResponse:
+      type: object
+      required: [success, exceptions]
+      properties:
+        success:
+          type: boolean
+        exceptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuadrantExceptionItem'
+
+    QuadrantExceptionCreateRequest:
+      type: object
+      required: [exception_date, type]
+      properties:
+        exception_date:
+          type: string
+          format: date
+        type:
+          $ref: '#/components/schemas/QuadrantExceptionType'
+        substitute_employee_id:
+          type: integer
+          nullable: true
+        new_start_time:
+          type: string
+          nullable: true
+        new_end_time:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+
+    QuadrantWeekAssignmentsResponse:
+      type: object
+      required: [success, assignments, week_start, week_end]
+      properties:
+        success:
+          type: boolean
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuadrantAssignmentItem'
+        week_start:
+          type: string
+          format: date
+        week_end:
+          type: string
+          format: date
+
+    AvailabilityVisit:
+      type: object
+      properties:
+        start_time:
+          type: string
+        end_time:
+          type: string
+        client_name:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+
+    QuadrantAvailabilityEmployee:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        conflicto:
+          allOf:
+            - $ref: '#/components/schemas/AvailabilityVisit'
+          nullable: true
+        visita_anterior:
+          allOf:
+            - $ref: '#/components/schemas/AvailabilityVisit'
+          nullable: true
+        visita_siguiente:
+          allOf:
+            - $ref: '#/components/schemas/AvailabilityVisit'
+          nullable: true
+        min_antes:
+          type: number
+          nullable: true
+        min_despues:
+          type: number
+          nullable: true
+        distancia_anterior:
+          type: number
+          nullable: true
+        distancia_siguiente:
+          type: number
+          nullable: true
+        visitas_dia:
+          type: integer
+
+    ClientCoverageStatus:
+      type: object
+      properties:
+        tone:
+          type: string
+        label:
+          type: string
+        employee_id:
+          type: integer
+          nullable: true
+        employee_name:
+          type: string
+          nullable: true
+        delay:
+          type: string
+        coverage_complete:
+          type: boolean
+
+    BusyClientStatus:
+      type: object
+      properties:
+        employee_name:
+          type: string
+          nullable: true
+        start_time:
+          type: string
+        end_time:
+          type: string
+
+    QuadrantAvailabilityResponse:
+      type: object
+      required: [success, employees, clients, required_services, required_service_ids, required_service_duration_minutes, selected_slot_minutes, service_time_fit]
+      properties:
+        success:
+          type: boolean
+        employees:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuadrantAvailabilityEmployee'
+        clients:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientSummary'
+        cliente_ocupado:
+          allOf:
+            - $ref: '#/components/schemas/BusyClientStatus'
+          nullable: true
+        required_services:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceItem'
+        required_service_ids:
+          type: array
+          items:
+            type: integer
+        required_service_duration_minutes:
+          type: integer
+        selected_slot_minutes:
+          type: integer
+        service_time_fit:
+          type: boolean
+
+    QuadrantClientAssignmentsResponse:
+      type: object
+      required: [success, assignments, accompaniment_status, week_start, week_end]
+      properties:
+        success:
+          type: boolean
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuadrantAssignmentItem'
+        accompaniment_status:
+          $ref: '#/components/schemas/ClientCoverageStatus'
+        week_start:
+          type: string
+          format: date
+        week_end:
+          type: string
+          format: date
+
+    RecordTypeCount:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/RecordType'
+        count:
+          type: integer
+
+    ReportStatsPayload:
+      type: object
+      required: [total_records, pending_confirmation, active_employees, by_type]
+      properties:
+        total_records:
+          type: integer
+        pending_confirmation:
+          type: integer
+        active_employees:
+          type: integer
+        by_type:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordTypeCount'
+
+    ReportStatsResponse:
+      type: object
+      required: [success, stats]
+      properties:
+        success:
+          type: boolean
+        stats:
+          $ref: '#/components/schemas/ReportStatsPayload'
+
+    ReportJsonPayload:
+      type: object
+      required: [generated_at, total_records, records]
+      properties:
+        generated_at:
+          type: string
+        total_records:
+          type: integer
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordSummary'
+
+    ReportJsonResponse:
+      type: object
+      required: [success, report]
+      properties:
+        success:
+          type: boolean
+        report:
+          $ref: '#/components/schemas/ReportJsonPayload'
+
+    ModificationRequestStatus:
+      type: string
+      enum: [pending, approved, rejected]
+
+    ModificationConfirmationStatus:
+      type: string
+      enum: [pending, confirmed, rejected]
+
+    ModificationRequestItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        record_id:
+          type: integer
+        employee_id:
+          type: integer
+        employee_name:
+          type: string
+          nullable: true
+        original_timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        new_date:
+          type: string
+          format: date
+        new_time:
+          type: string
+        reason:
+          type: string
+        status:
+          $ref: '#/components/schemas/ModificationRequestStatus'
+        approved_by:
+          type: integer
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ModificationRequestListResponse:
+      type: object
+      required: [success, requests]
+      properties:
+        success:
+          type: boolean
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModificationRequestItem'
+
+    ModificationRequestCreateRequest:
+      type: object
+      required: [recordId, newDate, newTime, reason]
+      properties:
+        recordId:
+          type: integer
+        newDate:
+          type: string
+          format: date
+        newTime:
+          type: string
+          example: 08:30
+        reason:
+          type: string
+
+    ModificationRequestCreatedResponse:
+      type: object
+      required: [success, message, request_id]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        request_id:
+          type: integer
+
+    ModificationConfirmationItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        record_id:
+          type: integer
+        employee_id:
+          type: integer
+        new_date:
+          type: string
+          format: date
+        new_time:
+          type: string
+        original_timestamp:
+          type: string
+          format: date-time
+          nullable: true
+        modified_by:
+          type: integer
+        modified_by_name:
+          type: string
+          nullable: true
+        reason:
+          type: string
+        source:
+          type: string
+        status:
+          $ref: '#/components/schemas/ModificationConfirmationStatus'
+        confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        current_timestamp_record:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ModificationConfirmationListResponse:
+      type: object
+      required: [success, confirmations]
+      properties:
+        success:
+          type: boolean
+        confirmations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModificationConfirmationItem'
+
+    ModificationConfirmationCreateRequest:
+      type: object
+      required: [recordId, newDate, newTime, reason]
+      properties:
+        recordId:
+          type: integer
+        newDate:
+          type: string
+          format: date
+        newTime:
+          type: string
+          example: 08:30
+        reason:
+          type: string
+        source:
+          type: string
+          enum: [gestion, gestión, bolsa]
+
+    ModificationConfirmationCreatedResponse:
+      type: object
+      required: [success, message, confirmation_id]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        confirmation_id:
+          type: integer
+
+    HolidayType:
+      type: string
+      enum: [national, regional, local]
+
+    CalendarItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        region_code:
+          type: string
+          nullable: true
+        created_by:
+          type: integer
+          nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+        holiday_count:
+          type: integer
+        regional_count:
+          type: integer
+        local_count:
+          type: integer
+        national_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CalendarListResponse:
+      type: object
+      required: [success, calendars]
+      properties:
+        success:
+          type: boolean
+        calendars:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalendarItem'
+
+    CalendarCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        region_code:
+          type: string
+          nullable: true
+
+    CalendarUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        region_code:
+          type: string
+          nullable: true
+
+    CalendarCreatedResponse:
+      type: object
+      required: [success, message, id, imported]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        id:
+          type: integer
+        imported:
+          type: integer
+
+    CalendarHolidayItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        calendar_id:
+          type: integer
+          nullable: true
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        type:
+          $ref: '#/components/schemas/HolidayType'
+        recurring:
+          type: boolean
+        source:
+          type: string
+          enum: [national, calendar]
+
+    CalendarHolidayListResponse:
+      type: object
+      required: [success, holidays]
+      properties:
+        success:
+          type: boolean
+        holidays:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalendarHolidayItem'
+
+    CalendarHolidayCreateRequest:
+      type: object
+      required: [name, date]
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        type:
+          $ref: '#/components/schemas/HolidayType'
+        recurring:
+          type: boolean
+
+    CalendarHolidayImportRequest:
+      type: object
+      required: [importNager]
+      properties:
+        importNager:
+          type: boolean
+          enum: [true]
+        year:
+          type: integer
+
+    CalendarHolidayCreatedResponse:
+      type: object
+      required: [success, message, id]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        id:
+          type: integer
+
+    CalendarHolidayImportResponse:
+      type: object
+      required: [success, message, imported, skipped]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        imported:
+          type: integer
+        skipped:
+          type: integer
+
+    ZoneHolidayItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        zone_id:
+          type: integer
+          nullable: true
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        type:
+          $ref: '#/components/schemas/HolidayType'
+        recurring:
+          type: boolean
+        created_by:
+          type: integer
+          nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+
+    ZoneHolidayListResponse:
+      type: object
+      required: [success, holidays]
+      properties:
+        success:
+          type: boolean
+        holidays:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZoneHolidayItem'
+
+    ZoneHolidayCreateRequest:
+      type: object
+      required: [name, date]
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        type:
+          $ref: '#/components/schemas/HolidayType'
+        recurring:
+          type: boolean
+        zoneId:
+          type: integer
+          nullable: true
+
+    ZoneHolidayImportRequest:
+      type: object
+      required: [importNager]
+      properties:
+        importNager:
+          type: boolean
+          enum: [true]
+        year:
+          type: integer
+
+    ZoneHolidayCreatedResponse:
+      type: object
+      required: [success, message, id]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        id:
+          type: integer
+
+    ZoneHolidayImportResponse:
+      type: object
+      required: [success, message, imported, skipped]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        imported:
+          type: integer
+        skipped:
+          type: integer
+
+    ZoneToleranceSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        zone_id:
+          type: integer
+        zone_name:
+          type: string
+          nullable: true
+        default_entry_tolerance:
+          type: integer
+        default_exit_tolerance:
+          type: integer
+        notify_coordinator:
+          type: boolean
+        notify_after_minutes:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ZoneToleranceSettingsResponse:
+      type: object
+      required: [success, settings]
+      properties:
+        success:
+          type: boolean
+        settings:
+          $ref: '#/components/schemas/ZoneToleranceSettings'
+
+    ZoneToleranceUpdateRequest:
+      type: object
+      properties:
+        zoneId:
+          type: integer
+        defaultEntryTolerance:
+          type: integer
+        defaultExitTolerance:
+          type: integer
+        notifyCoordinator:
+          type: boolean
+        notifyAfterMinutes:
+          type: integer
+
+    EmployeeToleranceSchedule:
+      type: object
+      properties:
+        day_of_week:
+          type: integer
+        entry_tolerance_minutes:
+          type: integer
+          nullable: true
+        exit_tolerance_minutes:
+          type: integer
+          nullable: true
+        start_time:
+          type: string
+          nullable: true
+        end_time:
+          type: string
+          nullable: true
+        is_working_day:
+          type: boolean
+        zone_default_entry:
+          type: integer
+          nullable: true
+        zone_default_exit:
+          type: integer
+          nullable: true
+
+    EmployeeToleranceSchedulesResponse:
+      type: object
+      required: [success, schedules]
+      properties:
+        success:
+          type: boolean
+        schedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmployeeToleranceSchedule'
+
+    EmployeeToleranceDayUpdateRequest:
+      type: object
+      required: [dayOfWeek]
+      properties:
+        dayOfWeek:
+          type: integer
+        entryTolerance:
+          type: integer
+        exitTolerance:
+          type: integer
+
+    EmployeeToleranceBulkUpdateRequest:
+      type: object
+      properties:
+        entryTolerance:
+          type: integer
+        exitTolerance:
+          type: integer
+
+    TolerancePreset:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        entryTolerance:
+          type: integer
+          nullable: true
+        exitTolerance:
+          type: integer
+          nullable: true
+
+    TolerancePresetsResponse:
+      type: object
+      required: [success, presets]
+      properties:
+        success:
+          type: boolean
+        presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TolerancePreset'
+
+    BolsaAnotacionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        employee_id:
+          type: integer
+        date:
+          type: string
+          format: date
+        text:
+          type: string
+        affects_hours:
+          type: boolean
+        hours_adjustment:
+          type: number
+        color:
+          type: string
+        created_by:
+          type: integer
+          nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    BolsaAnotacionListResponse:
+      type: object
+      required: [success, anotaciones]
+      properties:
+        success:
+          type: boolean
+        anotaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/BolsaAnotacionItem'
+
+    BolsaAnotacionCreateRequest:
+      type: object
+      required: [employee_id, date, text]
+      properties:
+        employee_id:
+          type: integer
+        date:
+          type: string
+          format: date
+        text:
+          type: string
+        affects_hours:
+          type: boolean
+        hours_adjustment:
+          type: number
+        color:
+          type: string
+
+    BolsaAnotacionUpdateRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        affects_hours:
+          type: boolean
+        hours_adjustment:
+          type: number
+        color:
+          type: string
+
+    BolsaAnotacionCreatedResponse:
+      type: object
+      required: [success, message, id]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        id:
+          type: integer
+
+    QrGeneratorRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+        size:
+          type: integer
+          minimum: 100
+          maximum: 500
+
+    WorkHoursStatus:
+      type: string
+      enum: [completed, in_progress]
+
+    WorkHoursTodayResponse:
+      type: object
+      required: [success, hours_worked, work_hours, percentage, remaining, overtime, status]
+      properties:
+        success:
+          type: boolean
+        hours_worked:
+          type: number
+        work_hours:
+          type: number
+        percentage:
+          type: number
+        remaining:
+          type: number
+        overtime:
+          type: number
+        status:
+          $ref: '#/components/schemas/WorkHoursStatus'
+
+    WorkHoursDayDetail:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        hours:
+          type: number
+        expected:
+          type: number
+        balance:
+          type: number
+        has_records:
+          type: boolean
+        type:
+          type: string
+          enum: [work, vacation, holiday, annotation_only]
+        holiday_name:
+          type: string
+          nullable: true
+        anotaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/BolsaAnotacionItem'
+
+    BalanceStatus:
+      type: string
+      enum: [positive, negative]
+
+    WorkHoursBalanceResponse:
+      type: object
+      required: [success, month, work_days, vacation_days, holiday_days, total_hours_worked, horas_ajuste_anotaciones, expected_hours, balance, balance_status, days_detail]
+      properties:
+        success:
+          type: boolean
+        month:
+          type: string
+        work_days:
+          type: integer
+        vacation_days:
+          type: integer
+        holiday_days:
+          type: integer
+        total_hours_worked:
+          type: number
+        horas_ajuste_anotaciones:
+          type: number
+        expected_hours:
+          type: number
+        balance:
+          type: number
+        balance_status:
+          $ref: '#/components/schemas/BalanceStatus'
+        days_detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkHoursDayDetail'
 
     LoginRequest:
       type: object
