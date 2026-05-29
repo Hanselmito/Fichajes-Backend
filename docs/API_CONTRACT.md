@@ -12,6 +12,7 @@ Este repositorio debe comportarse como backend puro para un frontend externo en 
 
 - Desarrollo local: `http://localhost:8000/api`
 - Healthcheck: `GET /health`
+- `GET /health` ahora verifica tambien conectividad real con la base de datos y puede devolver `503` si la dependencia falla.
 
 ## CORS
 
@@ -27,6 +28,8 @@ Este repositorio debe comportarse como backend puro para un frontend externo en 
 - Sesion actual: `GET /auth/me`
 - Capacidades y permisos efectivos: `GET /auth/capabilities`
 - Logout: `POST /auth/logout`
+- `POST /auth/login` tiene rate limiting y puede responder `429` tras varios intentos fallidos consecutivos.
+- `POST /auth/logout` revoca el bearer token actual; ese mismo token deja de ser valido para llamadas posteriores.
 
 Respuesta de login:
 
@@ -83,6 +86,7 @@ Reglas de consumo:
 - `403`: usuario autenticado sin permisos
 - `404`: recurso inexistente o fuera de alcance
 - `422`: validacion Laravel
+- `429`: demasiados intentos de autenticacion
 - `500`: error interno
 
 ## Recursos principales

@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\ToleranceController;
 use App\Http\Controllers\Api\VacationRequestController;
 use App\Http\Controllers\Api\WorkHoursController;
 use App\Http\Controllers\Api\ZoneHolidayController;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 $todo = static fn (string $endpoint) => static function () use ($endpoint) {
@@ -26,14 +28,38 @@ $todo = static fn (string $endpoint) => static function () use ($endpoint) {
 };
 
 Route::get('/health', static function () {
-    return response()->json([
-        'success' => true,
-        'message' => 'API Laravel lista',
-    ]);
+    try {
+        DB::connection()->getPdo();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'API Laravel lista',
+            'checks' => [
+                'database' => [
+                    'status' => 'up',
+                    'driver' => DB::connection()->getDriverName(),
+                ],
+            ],
+        ]);
+    } catch (\Throwable $exception) {
+        Log::warning('Healthcheck database failure', [
+            'error' => $exception->getMessage(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Dependencias no disponibles',
+            'checks' => [
+                'database' => [
+                    'status' => 'down',
+                ],
+            ],
+        ], 503);
+    }
 });
 
 Route::prefix('auth')->group(function () use ($todo) {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::get('/capabilities', [AuthController::class, 'capabilities']);

@@ -42,10 +42,16 @@ paths:
       tags: [Health]
       security: []
       operationId: getHealth
-      summary: Healthcheck de la API
+      summary: Healthcheck de la API y la base de datos
       responses:
         '200':
           description: API disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Alguna dependencia requerida no esta disponible
           content:
             application/json:
               schema:
@@ -70,6 +76,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '422':
@@ -109,7 +117,7 @@ paths:
     post:
       tags: [Auth]
       operationId: logout
-      summary: Cerrar sesion logica del cliente
+      summary: Cerrar sesion y revocar el token actual
       responses:
         '200':
           description: Logout correcto
@@ -3069,6 +3077,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    TooManyRequests:
+      description: Demasiados intentos en una ventana corta de tiempo
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Demasiados intentos de login. Intentalo de nuevo en unos instantes.
     ValidationError:
       description: Error de validacion
       content:
@@ -3087,6 +3104,16 @@ components:
         message:
           type: string
           example: API Laravel lista
+        checks:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [up, down]
+              driver:
+                type: string
 
     ErrorResponse:
       type: object

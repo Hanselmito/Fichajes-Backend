@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use JsonException;
 
@@ -61,6 +62,10 @@ class LegacyApiAuth
             return null;
         }
 
+        if ($this->isTokenRevoked($token)) {
+            return null;
+        }
+
         [$encodedPayload, $providedSignature] = explode('.', $token, 2);
         $expectedSignature = hash_hmac('sha256', $encodedPayload, $this->tokenSecret());
 
@@ -68,16 +73,7 @@ class LegacyApiAuth
             return null;
         }
 
-        $payloadJson = $this->base64UrlDecode($encodedPayload);
-        if ($payloadJson === false) {
-            return null;
-        }
-
-        try {
-            $payload = json_decode($payloadJson, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            return null;
-        }
+        $payload = $this->parseTokenPayload($encodedPayload);
 
         if (! is_array($payload) || now()->timestamp >= (int) ($payload['exp'] ?? 0)) {
             return null;
@@ -97,6 +93,19 @@ class LegacyApiAuth
         }
 
         return $user;
+    }
+
+    public function revokeToken(?string $token): void
+    {
+        if (! is_string($token) || $token === '' || ! str_contains($token, '.')) {
+            return;
+        }
+
+        [$encodedPayload] = explode('.', $token, 2);
+        $payload = $this->parseTokenPayload($encodedPayload);
+        $ttlSeconds = max(60, (int) ($payload['exp'] ?? now()->addMinutes($this->tokenTtlMinutes())->timestamp) - now()->timestamp);
+
+        Cache::put($this->revokedTokenCacheKey($token), true, now()->addSeconds($ttlSeconds));
     }
 
     public function serializeUser(User $user): array
@@ -301,7 +310,34 @@ class LegacyApiAuth
 
     private function tokenTtlMinutes(): int
     {
-        return max(1, (int) env('AUTH_TOKEN_TTL_MINUTES', 10080));
+        return max(1, (int) config('auth.legacy_api.token_ttl_minutes', 10080));
+    }
+
+    private function isTokenRevoked(string $token): bool
+    {
+        return Cache::has($this->revokedTokenCacheKey($token));
+    }
+
+    private function revokedTokenCacheKey(string $token): string
+    {
+        return (string) config('auth.legacy_api.revoked_token_cache_prefix', 'legacy_api_revoked_token:').hash('sha256', $token);
+    }
+
+    private function parseTokenPayload(string $encodedPayload): ?array
+    {
+        $payloadJson = $this->base64UrlDecode($encodedPayload);
+
+        if ($payloadJson === false) {
+            return null;
+        }
+
+        try {
+            $payload = json_decode($payloadJson, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return null;
+        }
+
+        return is_array($payload) ? $payload : null;
     }
 
     private function base64UrlEncode(string $value): string

@@ -114,4 +114,11 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'legacy_api' => [
+        'token_ttl_minutes' => (int) env('AUTH_TOKEN_TTL_MINUTES', 10080),
+        'login_max_attempts' => (int) env('AUTH_LOGIN_RATE_LIMIT_PER_MINUTE', 5),
+        'login_decay_seconds' => (int) env('AUTH_LOGIN_RATE_LIMIT_DECAY_SECONDS', 60),
+        'revoked_token_cache_prefix' => env('AUTH_REVOKED_TOKEN_CACHE_PREFIX', 'legacy_api_revoked_token:'),
+    ],
+
 ];
