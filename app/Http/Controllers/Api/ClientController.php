@@ -22,7 +22,7 @@ class ClientController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -85,7 +85,7 @@ class ClientController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -159,7 +159,7 @@ class ClientController extends Controller
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -196,7 +196,7 @@ class ClientController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -308,7 +308,7 @@ class ClientController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -344,7 +344,7 @@ class ClientController extends Controller
 
     public function geocode(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -383,7 +383,7 @@ class ClientController extends Controller
 
     public function geocodeAll(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -430,7 +430,7 @@ class ClientController extends Controller
 
     public function lookupByQr(Request $request, string $qrCode): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -472,7 +472,7 @@ class ClientController extends Controller
 
     public function regenerateQr(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -591,3 +591,4 @@ class ClientController extends Controller
         ], 403);
     }
 }
+

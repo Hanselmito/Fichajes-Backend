@@ -75,9 +75,33 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
+                $ref: '#/components/schemas/AuthSessionResponse'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      operationId: refreshSession
+      summary: Renovar sesion con rotacion de refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Sesion renovada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSessionResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '422':
@@ -117,7 +141,13 @@ paths:
     post:
       tags: [Auth]
       operationId: logout
-      summary: Cerrar sesion y revocar el token actual
+      summary: Cerrar sesion y revocar el access token actual
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
       responses:
         '200':
           description: Logout correcto
@@ -127,6 +157,8 @@ paths:
                 $ref: '#/components/schemas/MessageResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
 
   /users:
     get:
@@ -4955,9 +4987,22 @@ components:
         password:
           type: string
 
-    LoginResponse:
+    RefreshRequest:
       type: object
-      required: [success, message, token, user]
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    LogoutRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+
+    AuthSessionResponse:
+      type: object
+      required: [success, message, token, access_token, refresh_token, token_type, expires_in, refresh_expires_in, user]
       properties:
         success:
           type: boolean
@@ -4965,6 +5010,17 @@ components:
           type: string
         token:
           type: string
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+        refresh_expires_in:
+          type: integer
         user:
           $ref: '#/components/schemas/UserDetails'
 

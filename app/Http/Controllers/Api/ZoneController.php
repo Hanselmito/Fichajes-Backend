@@ -19,7 +19,7 @@ class ZoneController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -38,7 +38,7 @@ class ZoneController extends Controller
 
     public function minimal(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -61,7 +61,7 @@ class ZoneController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -114,7 +114,7 @@ class ZoneController extends Controller
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -137,7 +137,7 @@ class ZoneController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -213,7 +213,7 @@ class ZoneController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -256,7 +256,7 @@ class ZoneController extends Controller
 
     public function regenerateQr(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -315,3 +315,4 @@ class ZoneController extends Controller
         ], 403);
     }
 }
+

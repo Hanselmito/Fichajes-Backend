@@ -24,12 +24,22 @@ Este repositorio debe comportarse como backend puro para un frontend externo en 
 ## Autenticacion
 
 - Login: `POST /auth/login`
+- Renovacion de sesion: `POST /auth/refresh`
 - Header requerido para endpoints protegidos: `Authorization: Bearer <token>`
 - Sesion actual: `GET /auth/me`
 - Capacidades y permisos efectivos: `GET /auth/capabilities`
 - Logout: `POST /auth/logout`
+- El backend emite un access token corto y un refresh token de mayor duracion.
+- TTL por defecto: access token `15` minutos, refresh token `10080` minutos (`7` dias).
+- `GET /auth/me`, `GET /auth/capabilities` y el resto de recursos protegidos dependen del middleware central `legacy-api.auth`; ya no deben implementar resolucion manual del bearer token por controlador.
 - `POST /auth/login` tiene rate limiting y puede responder `429` tras varios intentos fallidos consecutivos.
-- `POST /auth/logout` revoca el bearer token actual; ese mismo token deja de ser valido para llamadas posteriores.
+- `POST /auth/refresh` rota el refresh token. Si un refresh token ya fue usado o revocado, debe devolver `401`.
+- `POST /auth/logout` revoca el bearer token actual y puede revocar tambien el refresh token enviado en el body; esos tokens dejan de ser validos para llamadas posteriores.
+
+Configuracion de secretos:
+
+- Variables esperadas: `AUTH_ACCESS_TOKEN_SECRET` y `AUTH_REFRESH_TOKEN_SECRET`.
+- En entornos no `local` ni `testing`, ambos secretos deben estar definidos, ser distintos y tener al menos 32 caracteres.
 
 Respuesta de login:
 
@@ -37,7 +47,12 @@ Respuesta de login:
 {
   "success": true,
   "message": "Login exitoso",
-  "token": "jwt-o-token-propio",
+  "token": "access-token",
+  "access_token": "access-token",
+  "refresh_token": "refresh-token",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
   "user": {
     "id": 12,
     "username": "empleado1",
@@ -46,6 +61,22 @@ Respuesta de login:
     "role": "employee",
     "zone_id": 3
   }
+}
+```
+
+Peticion de refresh:
+
+```json
+{
+  "refreshToken": "refresh-token"
+}
+```
+
+Peticion de logout con revocacion explicita del refresh token:
+
+```json
+{
+  "refreshToken": "refresh-token"
 }
 ```
 

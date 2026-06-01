@@ -20,7 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
             ->withoutOverlapping();
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'legacy-api.auth' => \App\Http\Middleware\ResolveLegacyApiUser::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

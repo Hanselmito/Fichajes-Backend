@@ -170,7 +170,7 @@ class ToleranceController extends Controller
 
     public function presets(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -189,7 +189,7 @@ class ToleranceController extends Controller
 
     private function requireManager(Request $request): User|JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }

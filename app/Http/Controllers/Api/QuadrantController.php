@@ -25,7 +25,7 @@ class QuadrantController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -77,7 +77,7 @@ class QuadrantController extends Controller
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -121,7 +121,7 @@ class QuadrantController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -174,7 +174,7 @@ class QuadrantController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -228,7 +228,7 @@ class QuadrantController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
 
         if (! $authUser) {
             return $this->unauthorized();
@@ -260,7 +260,7 @@ class QuadrantController extends Controller
 
     public function assignments(Request $request, string $quadrantId): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -293,7 +293,7 @@ class QuadrantController extends Controller
 
     public function storeAssignment(Request $request, string $quadrantId): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -357,7 +357,7 @@ class QuadrantController extends Controller
 
     public function updateAssignment(Request $request, string $quadrantId, string $assignmentId): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -416,7 +416,7 @@ class QuadrantController extends Controller
 
     public function destroyAssignment(Request $request, string $quadrantId, string $assignmentId): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -443,7 +443,7 @@ class QuadrantController extends Controller
 
     public function exceptions(Request $request, string $quadrantId, string $assignmentId): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -470,7 +470,7 @@ class QuadrantController extends Controller
 
     public function storeException(Request $request, string $quadrantId, string $assignmentId): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -523,7 +523,7 @@ class QuadrantController extends Controller
 
     public function destroyException(Request $request, string $quadrantId, string $assignmentId, string $exceptionId): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }

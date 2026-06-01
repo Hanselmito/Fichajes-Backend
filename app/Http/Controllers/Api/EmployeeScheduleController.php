@@ -24,7 +24,7 @@ class EmployeeScheduleController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -65,7 +65,7 @@ class EmployeeScheduleController extends Controller
 
     private function save(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
