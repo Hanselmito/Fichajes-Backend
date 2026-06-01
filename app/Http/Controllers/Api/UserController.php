@@ -20,7 +20,7 @@ class UserController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -47,7 +47,7 @@ class UserController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -122,7 +122,7 @@ class UserController extends Controller
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -154,7 +154,7 @@ class UserController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -328,7 +328,7 @@ class UserController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return $this->unauthorized();
         }
@@ -402,3 +402,4 @@ class UserController extends Controller
         ], 403);
     }
 }
+

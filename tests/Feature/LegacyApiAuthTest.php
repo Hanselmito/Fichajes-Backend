@@ -19,7 +19,7 @@ class LegacyApiAuthTest extends TestCase
         Cache::flush();
     }
 
-    public function test_admin_can_login_and_fetch_me(): void
+    public function test_admin_can_login_refresh_and_logout(): void
     {
         $loginResponse = $this->postJson('/api/auth/login', [
             'username' => 'admin',
@@ -29,17 +29,25 @@ class LegacyApiAuthTest extends TestCase
         $loginResponse
             ->assertOk()
             ->assertJsonPath('success', true)
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('token', $loginResponse->json('access_token'))
             ->assertJsonPath('user.username', 'admin');
 
-        $token = $loginResponse->json('token');
+        $accessToken = $loginResponse->json('access_token');
+        $refreshToken = $loginResponse->json('refresh_token');
 
-        $this->withHeader('Authorization', 'Bearer '.$token)
+        $this->assertIsString($accessToken);
+        $this->assertIsString($refreshToken);
+        $this->assertNotSame('', $accessToken);
+        $this->assertNotSame('', $refreshToken);
+
+        $this->withHeader('Authorization', 'Bearer '.$accessToken)
             ->getJson('/api/auth/me')
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('user.username', 'admin');
 
-        $this->withHeader('Authorization', 'Bearer '.$token)
+        $this->withHeader('Authorization', 'Bearer '.$accessToken)
             ->getJson('/api/auth/capabilities')
             ->assertOk()
             ->assertJsonPath('success', true)
@@ -49,13 +57,44 @@ class LegacyApiAuthTest extends TestCase
             ->assertJsonPath('capabilities.permissions.can_view_reports.allowed', true)
             ->assertJsonPath('capabilities.resource_access.users.manage', true);
 
-        $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/api/auth/logout')
+        $refreshResponse = $this->postJson('/api/auth/refresh', [
+            'refreshToken' => $refreshToken,
+        ]);
+
+        $refreshResponse
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('token', $refreshResponse->json('access_token'))
+            ->assertJsonPath('user.username', 'admin');
+
+        $rotatedAccessToken = $refreshResponse->json('access_token');
+        $rotatedRefreshToken = $refreshResponse->json('refresh_token');
+
+        $this->assertNotSame($accessToken, $rotatedAccessToken);
+        $this->assertNotSame($refreshToken, $rotatedRefreshToken);
+
+        $this->postJson('/api/auth/refresh', [
+            'refreshToken' => $refreshToken,
+        ])
+            ->assertUnauthorized()
+            ->assertJsonPath('success', false);
+
+        $this->withHeader('Authorization', 'Bearer '.$rotatedAccessToken)
+            ->postJson('/api/auth/logout', [
+                'refreshToken' => $rotatedRefreshToken,
+            ])
             ->assertOk()
             ->assertJsonPath('success', true);
 
-        $this->withHeader('Authorization', 'Bearer '.$token)
+        $this->withHeader('Authorization', 'Bearer '.$rotatedAccessToken)
             ->getJson('/api/auth/me')
+            ->assertUnauthorized()
+            ->assertJsonPath('success', false);
+
+        $this->postJson('/api/auth/refresh', [
+            'refreshToken' => $rotatedRefreshToken,
+        ])
             ->assertUnauthorized()
             ->assertJsonPath('success', false);
     }

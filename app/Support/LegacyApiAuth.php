@@ -3,12 +3,18 @@
 namespace App\Support;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use RuntimeException;
 use JsonException;
 
 class LegacyApiAuth
 {
+    private const ACCESS_TOKEN_TYPE = 'access';
+
+    private const REFRESH_TOKEN_TYPE = 'refresh';
+
     private const PERMISSION_LABELS = [
         'can_view_reports' => 'Puede acceder a reportes fuera de su ambito minimo',
         'can_view_all_records' => 'Puede consultar fichajes fuera de su ambito minimo',
@@ -32,12 +38,122 @@ class LegacyApiAuth
 
     public function issueToken(User $user): string
     {
+        return $this->issueAccessToken($user);
+    }
+
+    public function issueAccessToken(User $user): string
+    {
+        return $this->issueSignedToken($user, self::ACCESS_TOKEN_TYPE, $this->accessTokenTtlMinutes())['token'];
+    }
+
+    public function issueTokenPair(User $user): array
+    {
+        $accessToken = $this->issueSignedToken($user, self::ACCESS_TOKEN_TYPE, $this->accessTokenTtlMinutes());
+        $refreshToken = $this->issueSignedToken($user, self::REFRESH_TOKEN_TYPE, $this->refreshTokenTtlMinutes());
+
+        $this->storeRefreshToken($refreshToken['token'], $refreshToken['payload']);
+
+        return [
+            'access_token' => $accessToken['token'],
+            'access_expires_at' => (int) $accessToken['payload']['exp'],
+            'access_expires_in' => max(0, (int) $accessToken['payload']['exp'] - now()->timestamp),
+            'refresh_token' => $refreshToken['token'],
+            'refresh_expires_at' => (int) $refreshToken['payload']['exp'],
+            'refresh_expires_in' => max(0, (int) $refreshToken['payload']['exp'] - now()->timestamp),
+            'token_type' => 'Bearer',
+        ];
+    }
+
+    public function refreshTokenPair(string $refreshToken): ?array
+    {
+        $token = $this->normalizeToken($refreshToken);
+
+        if (! $token) {
+            return null;
+        }
+
+        $payload = $this->validatedPayloadFromToken($token, self::REFRESH_TOKEN_TYPE);
+
+        if (! $payload || ! $this->isRefreshTokenActive($token, $payload)) {
+            return null;
+        }
+
+        $user = $this->resolveUserFromPayload($payload);
+
+        if (! $user) {
+            $this->revokeToken($token);
+
+            return null;
+        }
+
+        $this->revokeToken($token);
+
+        return array_merge($this->issueTokenPair($user), [
+            'user' => $user,
+        ]);
+    }
+
+    public function resolveUserFromRequest(Request $request): ?User
+    {
+        return $this->resolveAccessUserFromRequest($request);
+    }
+
+    public function resolveAccessUserFromRequest(Request $request): ?User
+    {
+        return $this->resolveUserFromToken($request->bearerToken(), self::ACCESS_TOKEN_TYPE);
+    }
+
+    public function resolveUserFromToken(?string $token, string $expectedType = self::ACCESS_TOKEN_TYPE): ?User
+    {
+        $normalizedToken = $this->normalizeToken($token);
+
+        if (! $normalizedToken) {
+            return null;
+        }
+
+        $payload = $this->validatedPayloadFromToken($normalizedToken, $expectedType);
+
+        if (! $payload) {
+            return null;
+        }
+
+        return $this->resolveUserFromPayload($payload);
+    }
+
+    public function revokeToken(?string $token): void
+    {
+        $normalizedToken = $this->normalizeToken($token);
+
+        if (! $normalizedToken) {
+            return;
+        }
+
+        $payload = $this->payloadFromTokenWithoutRevocationCheck($normalizedToken);
+        $ttlSeconds = max(60, (int) ($payload['exp'] ?? now()->addMinutes($this->refreshTokenTtlMinutes())->timestamp) - now()->timestamp);
+
+        if (is_array($payload) && ($payload['typ'] ?? null) === self::REFRESH_TOKEN_TYPE) {
+            $this->forgetRefreshToken($payload);
+        }
+
+        Cache::put($this->revokedTokenCacheKey($normalizedToken), true, now()->addSeconds($ttlSeconds));
+    }
+
+    public function assertSecretsAreConfigured(): void
+    {
+        $this->secretForTokenType(self::ACCESS_TOKEN_TYPE);
+        $this->secretForTokenType(self::REFRESH_TOKEN_TYPE);
+    }
+
+    private function issueSignedToken(User $user, string $tokenType, int $ttlMinutes): array
+    {
         $issuedAt = now();
-        $expiresAt = $issuedAt->copy()->addMinutes($this->tokenTtlMinutes());
+        $expiresAt = $issuedAt->copy()->addMinutes($ttlMinutes);
 
         $payload = [
             'sub' => $user->id,
             'usr' => $user->username,
+            'typ' => $tokenType,
+            'jti' => (string) Str::uuid(),
             'iat' => $issuedAt->timestamp,
             'exp' => $expiresAt->timestamp,
             'sig' => sha1($this->userSignatureSeed($user)),
@@ -49,63 +165,12 @@ class LegacyApiAuth
             abort(500, 'No se pudo generar el token de autenticacion.');
         }
 
-        $signature = hash_hmac('sha256', $encodedPayload, $this->tokenSecret());
+        $signature = hash_hmac('sha256', $encodedPayload, $this->secretForTokenType($tokenType));
 
-        return $encodedPayload.'.'.$signature;
-    }
-
-    public function resolveUserFromRequest(Request $request): ?User
-    {
-        $token = $request->bearerToken();
-
-        if (! $token || ! str_contains($token, '.')) {
-            return null;
-        }
-
-        if ($this->isTokenRevoked($token)) {
-            return null;
-        }
-
-        [$encodedPayload, $providedSignature] = explode('.', $token, 2);
-        $expectedSignature = hash_hmac('sha256', $encodedPayload, $this->tokenSecret());
-
-        if (! hash_equals($expectedSignature, $providedSignature)) {
-            return null;
-        }
-
-        $payload = $this->parseTokenPayload($encodedPayload);
-
-        if (! is_array($payload) || now()->timestamp >= (int) ($payload['exp'] ?? 0)) {
-            return null;
-        }
-
-        $user = User::query()
-            ->whereKey((int) ($payload['sub'] ?? 0))
-            ->where('active', true)
-            ->first();
-
-        if (! $user) {
-            return null;
-        }
-
-        if (! hash_equals((string) ($payload['sig'] ?? ''), sha1($this->userSignatureSeed($user)))) {
-            return null;
-        }
-
-        return $user;
-    }
-
-    public function revokeToken(?string $token): void
-    {
-        if (! is_string($token) || $token === '' || ! str_contains($token, '.')) {
-            return;
-        }
-
-        [$encodedPayload] = explode('.', $token, 2);
-        $payload = $this->parseTokenPayload($encodedPayload);
-        $ttlSeconds = max(60, (int) ($payload['exp'] ?? now()->addMinutes($this->tokenTtlMinutes())->timestamp) - now()->timestamp);
-
-        Cache::put($this->revokedTokenCacheKey($token), true, now()->addSeconds($ttlSeconds));
+        return [
+            'token' => $encodedPayload.'.'.$signature,
+            'payload' => $payload,
+        ];
     }
 
     public function serializeUser(User $user): array
@@ -303,14 +368,14 @@ class LegacyApiAuth
         ]);
     }
 
-    private function tokenSecret(): string
+    private function accessTokenTtlMinutes(): int
     {
-        return (string) (config('app.key') ?: env('AUTH_TOKEN_SECRET', 'change-this-local-auth-secret'));
+        return max(1, (int) config('auth.legacy_api.access_token_ttl_minutes', 15));
     }
 
-    private function tokenTtlMinutes(): int
+    private function refreshTokenTtlMinutes(): int
     {
-        return max(1, (int) config('auth.legacy_api.token_ttl_minutes', 10080));
+        return max(1, (int) config('auth.legacy_api.refresh_token_ttl_minutes', 10080));
     }
 
     private function isTokenRevoked(string $token): bool
@@ -321,6 +386,133 @@ class LegacyApiAuth
     private function revokedTokenCacheKey(string $token): string
     {
         return (string) config('auth.legacy_api.revoked_token_cache_prefix', 'legacy_api_revoked_token:').hash('sha256', $token);
+    }
+
+    private function refreshTokenCacheKey(array $payload): string
+    {
+        return (string) config('auth.legacy_api.refresh_token_cache_prefix', 'legacy_api_refresh_token:').($payload['jti'] ?? 'missing');
+    }
+
+    private function storeRefreshToken(string $token, array $payload): void
+    {
+        Cache::put(
+            $this->refreshTokenCacheKey($payload),
+            hash('sha256', $token),
+            now()->addSeconds(max(60, (int) $payload['exp'] - now()->timestamp)),
+        );
+    }
+
+    private function forgetRefreshToken(array $payload): void
+    {
+        Cache::forget($this->refreshTokenCacheKey($payload));
+    }
+
+    private function isRefreshTokenActive(string $token, array $payload): bool
+    {
+        $storedHash = Cache::get($this->refreshTokenCacheKey($payload));
+
+        return is_string($storedHash) && hash_equals($storedHash, hash('sha256', $token));
+    }
+
+    private function normalizeToken(?string $token): ?string
+    {
+        if (! is_string($token)) {
+            return null;
+        }
+
+        $normalizedToken = trim($token);
+
+        return $normalizedToken !== '' && str_contains($normalizedToken, '.') ? $normalizedToken : null;
+    }
+
+    private function validatedPayloadFromToken(string $token, string $expectedType): ?array
+    {
+        if ($this->isTokenRevoked($token)) {
+            return null;
+        }
+
+        $payload = $this->payloadFromTokenWithoutRevocationCheck($token);
+
+        if (! is_array($payload) || ($payload['typ'] ?? null) !== $expectedType) {
+            return null;
+        }
+
+        if (now()->timestamp >= (int) ($payload['exp'] ?? 0)) {
+            return null;
+        }
+
+        return $payload;
+    }
+
+    private function payloadFromTokenWithoutRevocationCheck(string $token): ?array
+    {
+        [$encodedPayload, $providedSignature] = explode('.', $token, 2);
+        $payload = $this->parseTokenPayload($encodedPayload);
+
+        if (! is_array($payload)) {
+            return null;
+        }
+
+        $tokenType = (string) ($payload['typ'] ?? '');
+
+        if (! in_array($tokenType, [self::ACCESS_TOKEN_TYPE, self::REFRESH_TOKEN_TYPE], true)) {
+            return null;
+        }
+
+        $expectedSignature = hash_hmac('sha256', $encodedPayload, $this->secretForTokenType($tokenType));
+
+        if (! hash_equals($expectedSignature, $providedSignature)) {
+            return null;
+        }
+
+        return $payload;
+    }
+
+    private function resolveUserFromPayload(array $payload): ?User
+    {
+        $user = User::query()
+            ->whereKey((int) ($payload['sub'] ?? 0))
+            ->where('active', true)
+            ->first();
+
+        if (! $user) {
+            return null;
+        }
+
+        if (! hash_equals((string) ($payload['sig'] ?? ''), sha1($this->userSignatureSeed($user)))) {
+            return null;
+        }
+
+        return $user;
+    }
+
+    private function secretForTokenType(string $tokenType): string
+    {
+        $configKey = $tokenType === self::REFRESH_TOKEN_TYPE ? 'refresh_token_secret' : 'access_token_secret';
+        $secret = (string) config('auth.legacy_api.'.$configKey, '');
+
+        if ($this->isStrictSecretValidationEnvironment()) {
+            if ($secret === '' || str_starts_with($secret, 'change-this-local-') || strlen($secret) < 32) {
+                throw new RuntimeException(sprintf('El secret de %s token debe configurarse explicitamente y tener al menos 32 caracteres fuera de local/testing.', $tokenType));
+            }
+
+            if ((string) config('auth.legacy_api.access_token_secret') === (string) config('auth.legacy_api.refresh_token_secret')) {
+                throw new RuntimeException('AUTH_ACCESS_TOKEN_SECRET y AUTH_REFRESH_TOKEN_SECRET deben ser distintos fuera de local/testing.');
+            }
+
+            return $secret;
+        }
+
+        if ($secret !== '') {
+            return $secret;
+        }
+
+        return (string) config('app.key', 'local-dev-secret');
+    }
+
+    private function isStrictSecretValidationEnvironment(): bool
+    {
+        return ! app()->environment(['local', 'testing']);
     }
 
     private function parseTokenPayload(string $encodedPayload): ?array

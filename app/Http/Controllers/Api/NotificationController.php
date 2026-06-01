@@ -20,7 +20,7 @@ class NotificationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -49,7 +49,7 @@ class NotificationController extends Controller
 
     public function read(Request $request, string $notification): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -68,7 +68,7 @@ class NotificationController extends Controller
 
     public function readAll(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -87,7 +87,7 @@ class NotificationController extends Controller
 
     public function settings(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -100,7 +100,7 @@ class NotificationController extends Controller
 
     public function updateSettings(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -143,7 +143,7 @@ class NotificationController extends Controller
 
     public function destroy(Request $request, string $notification): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -179,3 +179,4 @@ class NotificationController extends Controller
         return ((int) DB::table($table)->max('id')) + 1;
     }
 }
+

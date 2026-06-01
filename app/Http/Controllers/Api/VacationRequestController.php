@@ -21,7 +21,7 @@ class VacationRequestController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -49,7 +49,7 @@ class VacationRequestController extends Controller
 
     public function show(Request $request, string $vacationRequest): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -77,7 +77,7 @@ class VacationRequestController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -171,7 +171,7 @@ class VacationRequestController extends Controller
 
     public function destroy(Request $request, string $vacationRequest): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -196,7 +196,7 @@ class VacationRequestController extends Controller
 
     public function stats(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -268,7 +268,7 @@ class VacationRequestController extends Controller
 
     private function resolveDecision(Request $request, int $requestId, bool $approve): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }

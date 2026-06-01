@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\LegacyApiAuth;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -23,12 +24,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        app(LegacyApiAuth::class)->assertSecretsAreConfigured();
+
         RateLimiter::for('auth-login', function (Request $request): Limit {
             $username = Str::lower($request->input('username', 'guest'));
             $maxAttempts = max(1, (int) config('auth.legacy_api.login_max_attempts', 5));
             $decaySeconds = max(1, (int) config('auth.legacy_api.login_decay_seconds', 60));
 
-            return Limit::perMinutes($decaySeconds / 60, $maxAttempts)
+            return Limit::perSecond($maxAttempts, $decaySeconds)
                 ->by($username.'|'.$request->ip())
                 ->response(static function () {
                     return response()->json([

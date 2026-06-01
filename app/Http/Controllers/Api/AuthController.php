@@ -43,26 +43,60 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $token = $this->legacyApiAuth->issueToken($user);
+        $tokens = $this->legacyApiAuth->issueTokenPair($user);
 
         return response()->json([
             'success' => true,
             'message' => 'Login exitoso',
-            'token' => $token,
+            'token' => $tokens['access_token'],
+            'access_token' => $tokens['access_token'],
+            'refresh_token' => $tokens['refresh_token'],
+            'token_type' => $tokens['token_type'],
+            'expires_in' => $tokens['access_expires_in'],
+            'refresh_expires_in' => $tokens['refresh_expires_in'],
             'user' => $this->legacyApiAuth->serializeUser($user->loadMissing(['zone:id,name', 'calendar:id,name'])),
+        ]);
+    }
+
+    public function refresh(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'refreshToken' => ['required', 'string'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Refresh token requerido',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $session = $this->legacyApiAuth->refreshTokenPair($request->string('refreshToken')->toString());
+
+        if (! $session) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Refresh token no valido o expirado',
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sesion renovada',
+            'token' => $session['access_token'],
+            'access_token' => $session['access_token'],
+            'refresh_token' => $session['refresh_token'],
+            'token_type' => $session['token_type'],
+            'expires_in' => $session['access_expires_in'],
+            'refresh_expires_in' => $session['refresh_expires_in'],
+            'user' => $this->legacyApiAuth->serializeUser($session['user']->loadMissing(['zone:id,name', 'calendar:id,name'])),
         ]);
     }
 
     public function me(Request $request): JsonResponse
     {
-        $user = $this->legacyApiAuth->resolveUserFromRequest($request);
-
-        if (! $user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token no valido o expirado',
-            ], 401);
-        }
+        $user = $request->user();
 
         return response()->json([
             'success' => true,
@@ -72,14 +106,7 @@ class AuthController extends Controller
 
     public function capabilities(Request $request): JsonResponse
     {
-        $user = $this->legacyApiAuth->resolveUserFromRequest($request);
-
-        if (! $user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token no valido o expirado',
-            ], 401);
-        }
+        $user = $request->user();
 
         return response()->json([
             'success' => true,
@@ -89,14 +116,23 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        if (! $this->legacyApiAuth->resolveUserFromRequest($request)) {
+        $validator = Validator::make($request->all(), [
+            'refreshToken' => ['nullable', 'string'],
+        ]);
+
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Token no valido o expirado',
-            ], 401);
+                'message' => 'Refresh token invalido',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
         $this->legacyApiAuth->revokeToken($request->bearerToken());
+
+        if ($request->filled('refreshToken')) {
+            $this->legacyApiAuth->revokeToken($request->string('refreshToken')->toString());
+        }
 
         return response()->json([
             'success' => true,

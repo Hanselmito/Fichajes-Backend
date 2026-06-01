@@ -22,7 +22,7 @@ class ModificationController extends Controller
 
     public function indexRequests(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -64,7 +64,7 @@ class ModificationController extends Controller
 
     public function storeRequest(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -137,7 +137,7 @@ class ModificationController extends Controller
 
     public function listConfirmations(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -160,7 +160,7 @@ class ModificationController extends Controller
 
     public function storeConfirmation(Request $request): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -244,7 +244,7 @@ class ModificationController extends Controller
 
     private function resolveRequestDecision(Request $request, int $requestId, bool $approve): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
@@ -299,7 +299,7 @@ class ModificationController extends Controller
 
     private function resolveConfirmationDecision(Request $request, int $confirmationId, bool $confirm): JsonResponse
     {
-        $authUser = $this->legacyApiAuth->resolveUserFromRequest($request);
+        $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
         }
