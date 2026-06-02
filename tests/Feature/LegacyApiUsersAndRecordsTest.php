@@ -82,11 +82,6 @@ class LegacyApiUsersAndRecordsTest extends TestCase
 
     private function withAdminToken(): self
     {
-        $token = $this->postJson('/api/auth/login', [
-            'username' => 'admin',
-            'password' => 'password',
-        ])->json('token');
-
-        return $this->withHeader('Authorization', 'Bearer '.$token);
+        return $this->withLegacyBearerToken('admin');
     }
 }

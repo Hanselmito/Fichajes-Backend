@@ -115,6 +115,24 @@ class LegacyApiIncidenciasTest extends TestCase
             ->assertJsonPath('message', 'Incidencia eliminada');
 
         $this->assertDatabaseMissing('incidencias', ['id' => $incidenciaId]);
+        $this->assertDatabaseHas('audit_log', [
+            'table_name' => 'incidencias',
+            'record_id' => $incidenciaId,
+            'action' => 'INSERT',
+            'changed_by' => $employeeId,
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'table_name' => 'incidencias',
+            'record_id' => $incidenciaId,
+            'action' => 'UPDATE',
+            'changed_by' => $coordinatorId,
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'table_name' => 'incidencias',
+            'record_id' => $incidenciaId,
+            'action' => 'DELETE',
+            'changed_by' => 5,
+        ]);
     }
 
     private function nextId(string $table): int

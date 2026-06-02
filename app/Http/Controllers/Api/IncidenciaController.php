@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Incidencia;
 use App\Models\User;
+use App\Support\LegacyAuditLogger;
 use App\Support\LegacyApiAuth;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,7 @@ class IncidenciaController extends Controller
 {
     public function __construct(
         private readonly LegacyApiAuth $legacyApiAuth,
+        private readonly LegacyAuditLogger $legacyAuditLogger,
     ) {
     }
 
@@ -69,18 +71,29 @@ class IncidenciaController extends Controller
             'coordinadorId' => ['nullable', 'integer'],
         ]);
 
-        $incidencia = Incidencia::query()->create([
-            'id' => $this->nextLegacyId('incidencias'),
-            'employee_id' => $authUser->id,
-            'client_id' => $data['clientId'] ?? null,
-            'zone_id' => $data['zoneId'] ?? null,
-            'record_id' => $data['recordId'] ?? null,
-            'tipo' => $data['tipo'] ?? 'otro',
-            'prioridad' => $data['prioridad'] ?? 'media',
-            'titulo' => $data['titulo'],
-            'descripcion' => $data['descripcion'],
-            'coordinador_id' => $data['coordinadorId'] ?? null,
-        ]);
+        $incidencia = DB::transaction(function () use ($authUser, $data): Incidencia {
+            $incidencia = Incidencia::query()->create([
+                'id' => $this->nextLegacyId('incidencias'),
+                'employee_id' => $authUser->id,
+                'client_id' => $data['clientId'] ?? null,
+                'zone_id' => $data['zoneId'] ?? null,
+                'record_id' => $data['recordId'] ?? null,
+                'tipo' => $data['tipo'] ?? 'otro',
+                'prioridad' => $data['prioridad'] ?? 'media',
+                'titulo' => $data['titulo'],
+                'descripcion' => $data['descripcion'],
+                'coordinador_id' => $data['coordinadorId'] ?? null,
+            ]);
+
+            $this->legacyAuditLogger->logInsert(
+                'incidencias',
+                (int) $incidencia->id,
+                $incidencia->fresh()?->withoutRelations()->toArray() ?? $incidencia->withoutRelations()->toArray(),
+                (int) $authUser->id,
+            );
+
+            return $incidencia;
+        });
 
         return response()->json([
             'success' => true,
@@ -147,8 +160,20 @@ class IncidenciaController extends Controller
             $updates['resuelto_at'] = now();
         }
 
-        $incidencia->fill($updates);
-        $incidencia->save();
+        DB::transaction(function () use ($incidencia, $incidenciaId, $updates, $authUser): void {
+            $oldValues = Incidencia::query()->findOrFail($incidenciaId)->withoutRelations()->toArray();
+
+            $incidencia->fill($updates);
+            $incidencia->save();
+
+            $this->legacyAuditLogger->logUpdate(
+                'incidencias',
+                $incidenciaId,
+                $oldValues,
+                Incidencia::query()->findOrFail($incidenciaId)->withoutRelations()->toArray(),
+                (int) $authUser->id,
+            );
+        });
 
         return response()->json(['success' => true, 'message' => 'Incidencia actualizada']);
     }
@@ -169,7 +194,18 @@ class IncidenciaController extends Controller
             return response()->json(['success' => false, 'message' => 'ID requerido'], 400);
         }
 
-        Incidencia::query()->where('id', $incidenciaId)->delete();
+        DB::transaction(function () use ($incidenciaId, $authUser): void {
+            $incidencia = Incidencia::query()->find($incidenciaId);
+
+            if (! $incidencia) {
+                return;
+            }
+
+            $oldValues = $incidencia->withoutRelations()->toArray();
+            $incidencia->delete();
+
+            $this->legacyAuditLogger->logDelete('incidencias', $incidenciaId, $oldValues, (int) $authUser->id);
+        });
 
         return response()->json(['success' => true, 'message' => 'Incidencia eliminada']);
     }
