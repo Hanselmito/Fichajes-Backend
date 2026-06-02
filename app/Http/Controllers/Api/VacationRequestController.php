@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\VacationRequest;
+use App\Support\LegacyAuditLogger;
 use App\Support\LegacyApiAuth;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,7 @@ class VacationRequestController extends Controller
 {
     public function __construct(
         private readonly LegacyApiAuth $legacyApiAuth,
+        private readonly LegacyAuditLogger $legacyAuditLogger,
     ) {
     }
 
@@ -128,7 +130,7 @@ class VacationRequestController extends Controller
         $requestId = DB::transaction(function () use ($data, $employeeId, $daysCount, $employee, $authUser): int {
             $requestId = $this->nextLegacyId('vacation_requests');
 
-            VacationRequest::query()->create([
+            $vacationRequest = VacationRequest::query()->create([
                 'id' => $requestId,
                 'employee_id' => $employeeId,
                 'type' => $data['type'],
@@ -154,6 +156,13 @@ class VacationRequestController extends Controller
                 'Solicitud de vacaciones registrada',
                 $this->buildVacationRequestCreatedMessage($employee, $authUser, $data['type'], $data['start_date'], $data['end_date'], $daysCount),
                 $requestId,
+            );
+
+            $this->legacyAuditLogger->logInsert(
+                'vacation_requests',
+                $requestId,
+                $vacationRequest->fresh()?->withoutRelations()->toArray() ?? $vacationRequest->withoutRelations()->toArray(),
+                (int) $authUser->id,
             );
 
             return $requestId;
@@ -189,7 +198,13 @@ class VacationRequestController extends Controller
             return response()->json(['success' => false, 'message' => 'Solo se pueden cancelar solicitudes pendientes'], 400);
         }
 
-        $row->delete();
+        DB::transaction(function () use ($row, $authUser): void {
+            $oldValues = $row->withoutRelations()->toArray();
+            $requestId = (int) $row->id;
+            $row->delete();
+
+            $this->legacyAuditLogger->logDelete('vacation_requests', $requestId, $oldValues, (int) $authUser->id);
+        });
 
         return response()->json(['success' => true, 'message' => 'Solicitud cancelada']);
     }
@@ -292,23 +307,36 @@ class VacationRequestController extends Controller
         }
 
         $rejectionReason = $request->input('reason');
-        VacationRequest::query()->where('id', $requestId)->update([
-            'status' => $approve ? 'aprobada' : 'rechazada',
-            'approved_by' => $authUser->id,
-            'approved_at' => now(),
-            'rejection_reason' => $approve ? null : $rejectionReason,
-        ]);
 
-        $reasonText = ! empty($rejectionReason) ? ' Motivo: ' . $rejectionReason : '';
-        $this->notifyUsers(
-            [(int) $row->employee_id],
-            $approve ? 'vacation_approved' : 'vacation_rejected',
-            $approve ? 'Vacaciones aprobadas' : 'Vacaciones rechazadas',
-            $approve
-                ? 'Tu solicitud de ' . $row->type . ' del ' . $this->formatDate($row->start_date) . ' al ' . $this->formatDate($row->end_date) . ' ha sido aprobada.'
-                : 'Tu solicitud de ' . $row->type . ' del ' . $this->formatDate($row->start_date) . ' al ' . $this->formatDate($row->end_date) . ' ha sido rechazada.' . $reasonText,
-            $requestId,
-        );
+        DB::transaction(function () use ($approve, $authUser, $rejectionReason, $requestId, $row): void {
+            $oldValues = VacationRequest::query()->findOrFail($requestId)->withoutRelations()->toArray();
+
+            VacationRequest::query()->where('id', $requestId)->update([
+                'status' => $approve ? 'aprobada' : 'rechazada',
+                'approved_by' => $authUser->id,
+                'approved_at' => now(),
+                'rejection_reason' => $approve ? null : $rejectionReason,
+            ]);
+
+            $reasonText = ! empty($rejectionReason) ? ' Motivo: ' . $rejectionReason : '';
+            $this->notifyUsers(
+                [(int) $row->employee_id],
+                $approve ? 'vacation_approved' : 'vacation_rejected',
+                $approve ? 'Vacaciones aprobadas' : 'Vacaciones rechazadas',
+                $approve
+                    ? 'Tu solicitud de ' . $row->type . ' del ' . $this->formatDate($row->start_date) . ' al ' . $this->formatDate($row->end_date) . ' ha sido aprobada.'
+                    : 'Tu solicitud de ' . $row->type . ' del ' . $this->formatDate($row->start_date) . ' al ' . $this->formatDate($row->end_date) . ' ha sido rechazada.' . $reasonText,
+                $requestId,
+            );
+
+            $this->legacyAuditLogger->logUpdate(
+                'vacation_requests',
+                $requestId,
+                $oldValues,
+                VacationRequest::query()->findOrFail($requestId)->withoutRelations()->toArray(),
+                (int) $authUser->id,
+            );
+        });
 
         return response()->json(['success' => true, 'message' => $approve ? 'Solicitud aprobada' : 'Solicitud rechazada']);
     }

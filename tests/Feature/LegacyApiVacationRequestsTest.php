@@ -80,6 +80,16 @@ class LegacyApiVacationRequestsTest extends TestCase
             ->assertCreated()
             ->json('request.id');
 
+        $pendingRequestId = $this->withHeader('Authorization', 'Bearer ' . $employeeToken)
+            ->postJson('/api/vacation-requests', [
+                'type' => 'vacaciones',
+                'start_date' => '2026-09-01',
+                'end_date' => '2026-09-02',
+                'reason' => 'Pendiente de cancelar',
+            ])
+            ->assertCreated()
+            ->json('request.id');
+
         $this->withHeader('Authorization', 'Bearer ' . $coordinatorToken)
             ->getJson('/api/vacation-requests')
             ->assertOk()
@@ -105,6 +115,11 @@ class LegacyApiVacationRequestsTest extends TestCase
             ->assertJsonPath('available_vacaciones', 17)
             ->assertJsonPath('ap_available', 4);
 
+        $this->withHeader('Authorization', 'Bearer ' . $employeeToken)
+            ->deleteJson('/api/vacation-requests/' . $pendingRequestId)
+            ->assertOk()
+            ->assertJsonPath('message', 'Solicitud cancelada');
+
         $this->assertDatabaseHas('vacation_requests', [
             'id' => $approvedRequestId,
             'status' => 'aprobada',
@@ -116,6 +131,7 @@ class LegacyApiVacationRequestsTest extends TestCase
             'approved_by' => $coordinatorId,
             'rejection_reason' => 'No hay cobertura suficiente',
         ]);
+        $this->assertDatabaseMissing('vacation_requests', ['id' => $pendingRequestId]);
 
         $this->assertDatabaseHas('notifications', [
             'user_id' => $employeeId,
@@ -126,6 +142,30 @@ class LegacyApiVacationRequestsTest extends TestCase
             'user_id' => $employeeId,
             'type' => 'vacation_rejected',
             'related_id' => $rejectedRequestId,
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'table_name' => 'vacation_requests',
+            'record_id' => $approvedRequestId,
+            'action' => 'INSERT',
+            'changed_by' => $employeeId,
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'table_name' => 'vacation_requests',
+            'record_id' => $approvedRequestId,
+            'action' => 'UPDATE',
+            'changed_by' => $coordinatorId,
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'table_name' => 'vacation_requests',
+            'record_id' => $rejectedRequestId,
+            'action' => 'UPDATE',
+            'changed_by' => $coordinatorId,
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'table_name' => 'vacation_requests',
+            'record_id' => $pendingRequestId,
+            'action' => 'DELETE',
+            'changed_by' => $employeeId,
         ]);
     }
 

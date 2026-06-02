@@ -213,17 +213,12 @@ class LegacyApiClientsTest extends TestCase
 
     private function withAdminToken(): self
     {
-        return $this->withLogin('admin', 'password');
+        return $this->withLegacyBearerToken('admin');
     }
 
     private function withLogin(string $username, string $password): self
     {
-        $token = $this->postJson('/api/auth/login', [
-            'username' => $username,
-            'password' => $password,
-        ])->json('token');
-
-        return $this->withHeader('Authorization', 'Bearer '.$token);
+        return $this->withLegacyBearerToken($username, $password);
     }
 
     private function nextLegacyId(string $table): int
