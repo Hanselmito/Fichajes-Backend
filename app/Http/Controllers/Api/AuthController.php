@@ -128,10 +128,19 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $this->legacyApiAuth->revokeToken($request->bearerToken());
-
-        if ($request->filled('refreshToken')) {
-            $this->legacyApiAuth->revokeToken($request->string('refreshToken')->toString());
+        try {
+            // 1. Invalida el token JWT en la lista negra nativa si existe el guard
+            if (auth()->check()) {
+                auth()->logout();
+            }
+            
+            // 2. Mantiene tu revocación custom (legacyApiAuth)
+            $this->legacyApiAuth->revokeToken($request->bearerToken());
+            if ($request->filled('refreshToken')) {
+                $this->legacyApiAuth->revokeToken($request->string('refreshToken')->toString());
+            }
+        } catch (\Throwable $e) {
+            // Fallback silencioso si el token ya estaba caducado o revocado
         }
 
         return response()->json([
