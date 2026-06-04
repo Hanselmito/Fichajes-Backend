@@ -59,7 +59,7 @@ Route::get('/health', static function () {
 });
 
 Route::prefix('auth')->group(function () use ($todo) {
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
     Route::post('/refresh', [AuthController::class, 'refresh']);
 
     Route::middleware('legacy-api.auth')->group(function () {
